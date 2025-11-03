@@ -25,7 +25,7 @@ const ConnectionLines: React.FC<ConnectionLinesProps> = ({
   return (
     <svg
       className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 1 }}
+      style={{ zIndex: 5 }}
     >
       {connections.map(connection => {
         const from = getCardCenter(connection.fromCardId);

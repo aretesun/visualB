@@ -198,7 +198,7 @@ const App: React.FC = () => {
       className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000 bg-black"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
-      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
+      <div className="absolute inset-0 z-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
 
       {/* 연결선 레이어 */}
       <ConnectionLines
