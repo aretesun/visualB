@@ -46,10 +46,14 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 초기 로드 시에만 배경 이미지 설정
     refreshBackground();
+
+    // resize 이벤트 리스너 추가
     window.addEventListener('resize', refreshBackground);
     return () => window.removeEventListener('resize', refreshBackground);
-  }, [refreshBackground]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 빈 배열: 마운트 시에만 실행
 
   useEffect(() => {
     try {
