@@ -30,6 +30,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
   const [isEditingText, setIsEditingText] = useState(!item.text && !item.imageUrl);
   const [editText, setEditText] = useState(item.text || '');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isSelectingFile, setIsSelectingFile] = useState(false); // 파일 선택 중 상태
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +43,14 @@ const VisionItem: React.FC<VisionItemProps> = ({
       }, 100);
     }
   }, [isEditingText]);
+
+  // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
+  // 단, 파일 선택 중일 때는 삭제하지 않음
+  useEffect(() => {
+    if (!isEditingText && !item.text && !item.imageUrl && !isSelectingFile) {
+      onDelete(item.id);
+    }
+  }, [isEditingText, item.text, item.imageUrl, isSelectingFile, item.id, onDelete]);
 
   // 빈 카드가 처음 생성되었을 때 자동 포커스
   useEffect(() => {
@@ -124,9 +133,27 @@ const VisionItem: React.FC<VisionItemProps> = ({
       reader.onloadend = () => {
         onImageChange(item.id, reader.result as string);
         setIsEditingText(false); // 이미지 추가 후 편집 모드 종료
+        setIsSelectingFile(false);
       };
       reader.readAsDataURL(file);
+    } else {
+      // 파일 선택 취소
+      setIsSelectingFile(false);
     }
+  };
+
+  const handleImageAddClick = () => {
+    setIsSelectingFile(true);
+    fileInputRef.current?.click();
+
+    // 파일 탐색기가 닫혔을 때 감지 (취소한 경우)
+    const handleWindowFocus = () => {
+      setTimeout(() => {
+        setIsSelectingFile(false);
+      }, 100);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+    window.addEventListener('focus', handleWindowFocus);
   };
 
   const isEmpty = !item.text && !item.imageUrl;
@@ -187,7 +214,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
       ) : isEmpty && (
         <div
           className="w-full h-24 border-2 border-dashed border-white/30 rounded-md flex flex-col items-center justify-center text-white/50 hover:border-white/50 hover:text-white/70 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={handleImageAddClick}
         >
           <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
