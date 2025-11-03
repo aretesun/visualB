@@ -117,8 +117,6 @@ const App: React.FC = () => {
       className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-10"></div>
-
       {items.map((item) => (
         <VisionItem
           key={item.id}
