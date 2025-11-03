@@ -136,24 +136,28 @@ const VisionItem: React.FC<VisionItemProps> = ({
         setIsSelectingFile(false);
       };
       reader.readAsDataURL(file);
-    } else {
-      // 파일 선택 취소
-      setIsSelectingFile(false);
     }
+    // onChange가 호출되었지만 파일이 없으면 취소로 간주
+    // 약간의 딜레이 후 상태 초기화 (이벤트 처리 완료 대기)
+    setTimeout(() => {
+      setIsSelectingFile(false);
+    }, 300);
   };
 
   const handleImageAddClick = () => {
     setIsSelectingFile(true);
-    fileInputRef.current?.click();
 
-    // 파일 탐색기가 닫혔을 때 감지 (취소한 경우)
-    const handleWindowFocus = () => {
-      setTimeout(() => {
+    // input 요소에 cancel 이벤트 리스너 추가 (지원하는 브라우저)
+    const input = fileInputRef.current;
+    if (input) {
+      const handleCancel = () => {
         setIsSelectingFile(false);
-      }, 100);
-      window.removeEventListener('focus', handleWindowFocus);
-    };
-    window.addEventListener('focus', handleWindowFocus);
+        input.removeEventListener('cancel', handleCancel);
+      };
+      input.addEventListener('cancel', handleCancel, { once: true });
+    }
+
+    fileInputRef.current?.click();
   };
 
   const isEmpty = !item.text && !item.imageUrl;
