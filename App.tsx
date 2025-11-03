@@ -39,11 +39,9 @@ const App: React.FC = () => {
   const refreshBackground = useCallback(() => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    // Unsplash Source를 사용 (자연, 풍경, 여행 카테고리)
-    const categories = ['nature', 'landscape', 'travel'];
-    const category = categories[Math.floor(Math.random() * categories.length)];
+    // Lorem Picsum을 사용 (무료, 안정적)
     const timestamp = Date.now();
-    const url = `https://source.unsplash.com/random/${width}x${height}/?${category}&sig=${timestamp}`;
+    const url = `https://picsum.photos/${width}/${height}?blur=1&random=${timestamp}`;
     setBackgroundImage(url);
   }, []);
 
