@@ -39,19 +39,17 @@ const App: React.FC = () => {
   const refreshBackground = useCallback(() => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    // Lorem Picsum을 사용 (무료, 안정적)
+    // Unsplash Source를 사용 (자연, 풍경, 여행 카테고리)
+    const categories = ['nature', 'landscape', 'travel'];
+    const category = categories[Math.floor(Math.random() * categories.length)];
     const timestamp = Date.now();
-    const url = `https://picsum.photos/${width}/${height}?blur=1&random=${timestamp}`;
+    const url = `https://source.unsplash.com/random/${width}x${height}/?${category}&sig=${timestamp}`;
     setBackgroundImage(url);
   }, []);
 
   useEffect(() => {
     // 초기 로드 시에만 배경 이미지 설정
     refreshBackground();
-
-    // resize 이벤트 리스너 추가
-    window.addEventListener('resize', refreshBackground);
-    return () => window.removeEventListener('resize', refreshBackground);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 빈 배열: 마운트 시에만 실행
 
@@ -118,7 +116,7 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000"
+      className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000 bg-black"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
