@@ -41,7 +41,7 @@ const App: React.FC = () => {
     const height = window.innerHeight;
     // Lorem Picsum을 사용 (무료, 안정적)
     const timestamp = Date.now();
-    const url = `https://picsum.photos/${width}/${height}?blur=2&random=${timestamp}`;
+    const url = `https://picsum.photos/${width}/${height}?blur=1&random=${timestamp}`;
     setBackgroundImage(url);
   }, []);
 
@@ -117,7 +117,7 @@ const App: React.FC = () => {
       className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
-      <div className="absolute inset-0 bg-black bg-opacity-20 backdrop-blur-sm"></div>
+      <div className="absolute inset-0 bg-black bg-opacity-10"></div>
 
       {items.map((item) => (
         <VisionItem
