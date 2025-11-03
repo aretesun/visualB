@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Position } from './types';
+import { Card, Position, Connection } from './types';
 import VisionItem from './components/VisionItem';
 import Toolbar from './components/Toolbar';
 import AddCardButton from './components/AddCardButton';
 import LinksMenu from './components/LinksMenu';
 import Toast from './components/Toast';
 import SettingsMenu from './components/SettingsMenu';
+import ConnectionLines from './components/ConnectionLines';
 
 const MAX_CARDS = 100;
 
@@ -50,6 +51,20 @@ const App: React.FC = () => {
   });
   const [toastMessage, setToastMessage] = useState<string>('');
 
+  // 연결선 상태 관리
+  const [connections, setConnections] = useState<Connection[]>(() => {
+    try {
+      const savedConnections = localStorage.getItem('visionBoardConnections');
+      return savedConnections ? JSON.parse(savedConnections) : [];
+    } catch (error) {
+      console.error("Failed to load connections from localStorage", error);
+      return [];
+    }
+  });
+
+  const [connectionMode, setConnectionMode] = useState<boolean>(false);
+  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+
   const refreshBackground = useCallback(() => {
     // 배경 이미지 배열에서 랜덤하게 선택
     const randomIndex = Math.floor(Math.random() * BACKGROUND_IMAGES.length);
@@ -69,6 +84,14 @@ const App: React.FC = () => {
       console.error("Failed to save items to localStorage", error);
     }
   }, [items]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('visionBoardConnections', JSON.stringify(connections));
+    } catch (error) {
+      console.error("Failed to save connections to localStorage", error);
+    }
+  }, [connections]);
 
   // 빈 카드 생성
   const addCard = () => {
@@ -105,6 +128,53 @@ const App: React.FC = () => {
 
   const deleteItem = (id: number) => {
     setItems(prevItems => prevItems.filter(item => item.id !== id));
+    // 카드 삭제 시 관련 연결선도 삭제
+    setConnections(prevConnections =>
+      prevConnections.filter(conn => conn.fromCardId !== id && conn.toCardId !== id)
+    );
+  };
+
+  // 연결선 관련 함수들
+  const handleCardClick = (cardId: number) => {
+    if (!connectionMode) return;
+
+    if (selectedCard === null) {
+      // 첫 번째 카드 선택
+      setSelectedCard(cardId);
+      setToastMessage('연결할 두 번째 카드를 선택하세요');
+    } else if (selectedCard === cardId) {
+      // 같은 카드를 다시 클릭하면 선택 취소
+      setSelectedCard(null);
+      setToastMessage('');
+    } else {
+      // 두 번째 카드 선택 - 연결 생성
+      const newConnection: Connection = {
+        id: `${selectedCard}-${cardId}-${Date.now()}`,
+        fromCardId: selectedCard,
+        toCardId: cardId,
+        color: '#ef4444',
+        style: 'solid'
+      };
+      setConnections(prev => [...prev, newConnection]);
+      setSelectedCard(null);
+      setToastMessage('연결 완료!');
+    }
+  };
+
+  const deleteConnection = (connectionId: string) => {
+    setConnections(prevConnections =>
+      prevConnections.filter(conn => conn.id !== connectionId)
+    );
+  };
+
+  const toggleConnectionMode = () => {
+    setConnectionMode(prev => !prev);
+    setSelectedCard(null);
+    if (!connectionMode) {
+      setToastMessage('연결 모드: 카드를 클릭하여 연결하세요');
+    } else {
+      setToastMessage('');
+    }
   };
 
   const bringToFront = (id: number) => {
@@ -130,6 +200,13 @@ const App: React.FC = () => {
     >
       <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
 
+      {/* 연결선 레이어 */}
+      <ConnectionLines
+        connections={connections}
+        cards={items}
+        onDeleteConnection={deleteConnection}
+      />
+
       {items.map((item) => (
         <VisionItem
           key={item.id}
@@ -139,10 +216,17 @@ const App: React.FC = () => {
           onImageChange={updateItemImage}
           onDelete={deleteItem}
           onBringToFront={bringToFront}
+          onClick={() => handleCardClick(item.id)}
+          isSelected={connectionMode && selectedCard === item.id}
+          isConnectionMode={connectionMode}
         />
       ))}
 
-      <Toolbar onRefreshBackground={refreshBackground} />
+      <Toolbar
+        onRefreshBackground={refreshBackground}
+        onToggleConnectionMode={toggleConnectionMode}
+        isConnectionMode={connectionMode}
+      />
       <AddCardButton onAddCard={addCard} />
       <LinksMenu />
       <SettingsMenu

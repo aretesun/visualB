@@ -10,6 +10,9 @@ interface VisionItemProps {
   onImageChange: (id: number, imageUrl: string) => void;
   onDelete: (id: number) => void;
   onBringToFront: (id: number) => void;
+  onClick?: () => void;
+  isSelected?: boolean;
+  isConnectionMode?: boolean;
 }
 
 const VisionItem: React.FC<VisionItemProps> = ({
@@ -18,7 +21,10 @@ const VisionItem: React.FC<VisionItemProps> = ({
   onTextChange,
   onImageChange,
   onDelete,
-  onBringToFront
+  onBringToFront,
+  onClick,
+  isSelected = false,
+  isConnectionMode = false
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
   const { position, isDragging } = useDraggable({
@@ -136,10 +142,15 @@ const VisionItem: React.FC<VisionItemProps> = ({
       ref={itemRef}
       onFocus={handleFocus}
       onMouseDown={handleFocus}
+      onClick={onClick}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute w-64 rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border border-white/20 p-3 ${
+      className={`absolute w-64 rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out ${
+        isConnectionMode ? 'cursor-pointer' : 'cursor-grab'
+      } flex flex-col group bg-white/10 backdrop-blur-xl border ${
+        isSelected ? 'border-red-500 border-4' : 'border-white/20'
+      } p-3 ${
         isDragging ? 'shadow-black/50 scale-105 z-50' : 'shadow-black/30'
       } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''}`}
       style={{
