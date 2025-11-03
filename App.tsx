@@ -9,6 +9,20 @@ import SettingsMenu from './components/SettingsMenu';
 
 const MAX_CARDS = 100;
 
+// 자연, 풍경, 여행 테마의 배경 이미지들
+const BACKGROUND_IMAGES = [
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop', // 산 풍경
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2073&auto=format&fit=crop', // 해변
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop', // 산과 호수
+  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2070&auto=format&fit=crop', // 자연 풍경
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=2074&auto=format&fit=crop', // 숲
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070&auto=format&fit=crop', // 여행지
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop', // 산
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?q=80&w=2070&auto=format&fit=crop', // 자연
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=2074&auto=format&fit=crop', // 호수
+  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2071&auto=format&fit=crop', // 숲길
+];
+
 const App: React.FC = () => {
   const [items, setItems] = useState<Card[]>(() => {
     try {
@@ -37,12 +51,9 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>('');
 
   const refreshBackground = useCallback(() => {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    // Lorem Picsum을 사용 (무료, 안정적)
-    const timestamp = Date.now();
-    const url = `https://picsum.photos/${width}/${height}?blur=1&random=${timestamp}`;
-    setBackgroundImage(url);
+    // 배경 이미지 배열에서 랜덤하게 선택
+    const randomIndex = Math.floor(Math.random() * BACKGROUND_IMAGES.length);
+    setBackgroundImage(BACKGROUND_IMAGES[randomIndex]);
   }, []);
 
   useEffect(() => {
