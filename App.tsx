@@ -39,9 +39,9 @@ const App: React.FC = () => {
   const refreshBackground = useCallback(() => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    // Picsum Photos를 사용 (무료, 안정적)
-    const randomId = Math.floor(Math.random() * 1000);
-    const url = `https://picsum.photos/${width}/${height}?random=${randomId}&blur=1`;
+    // Unsplash Source API를 사용 (무료, API 키 불필요)
+    const timestamp = new Date().getTime();
+    const url = `https://source.unsplash.com/random/${width}x${height}?nature,landscape&sig=${timestamp}`;
     setBackgroundImage(url);
   }, []);
 
