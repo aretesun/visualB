@@ -72,6 +72,7 @@ const App: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showUrlModal, setShowUrlModal] = useState<boolean>(false);
   const [urlInputItemId, setUrlInputItemId] = useState<number | null>(null);
+  const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
 
   const refreshBackground = useCallback(() => {
     // 배경 이미지 배열에서 랜덤하게 선택
@@ -95,6 +96,49 @@ const App: React.FC = () => {
       }
     }
   }, [items]);
+
+  // 브라우저 창 크기 변경 시 카드 위치 자동 조정
+  useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout;
+
+    const handleResize = () => {
+      // debounce: 리사이즈가 완료된 후 100ms 후에 실행
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+
+        // 크기 변경이 거의 없으면 무시 (1px 미만)
+        if (Math.abs(newWidth - viewportSize.width) < 1 && Math.abs(newHeight - viewportSize.height) < 1) {
+          return;
+        }
+
+        // 크기 변경 비율 계산
+        const widthRatio = newWidth / viewportSize.width;
+        const heightRatio = newHeight / viewportSize.height;
+
+        // 모든 카드의 위치를 비율에 맞게 조정
+        setItems(prevItems =>
+          prevItems.map(item => ({
+            ...item,
+            position: {
+              x: Math.max(0, Math.min(item.position.x * widthRatio, newWidth - 100)),
+              y: Math.max(0, Math.min(item.position.y * heightRatio, newHeight - 100)),
+            },
+          }))
+        );
+
+        // 새로운 viewport 크기 저장
+        setViewportSize({ width: newWidth, height: newHeight });
+      }, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [viewportSize]);
 
   // 빈 카드 생성
   const addCard = () => {
