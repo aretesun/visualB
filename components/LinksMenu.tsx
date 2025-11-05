@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DeveloperNotes from './DeveloperNotes';
 
 interface LinkItem {
   title: string;
@@ -26,21 +27,36 @@ const links: LinkItem[] = [
 
 const LinksMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showDeveloperNotes, setShowDeveloperNotes] = useState(false);
 
   return (
-    <div className="fixed top-6 right-6 z-50">
-      {/* 웃는 이모지 버튼 */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all backdrop-blur-md shadow-lg text-2xl"
-        aria-label="Toggle links menu"
-      >
-        😊
-      </button>
+    <>
+      <div className="fixed top-6 right-6 z-50 flex space-x-3">
+        {/* 개발자 노트 버튼 */}
+        <button
+          onClick={() => setShowDeveloperNotes(true)}
+          className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all backdrop-blur-md shadow-lg"
+          aria-label="Developer notes"
+          title="개발자 노트"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </button>
+
+        {/* 웃는 이모지 버튼 */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all backdrop-blur-md shadow-lg text-2xl"
+          aria-label="Toggle links menu"
+        >
+          😊
+        </button>
+      </div>
 
       {/* 링크 메뉴 */}
       {isOpen && (
-        <div className="absolute top-16 right-0 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[200px]">
+        <div className="fixed top-20 right-6 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[200px]">
           <div className="flex flex-col space-y-2">
             {links.map((link, index) => (
               <a
@@ -59,7 +75,12 @@ const LinksMenu: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+
+      {/* 개발자 노트 모달 */}
+      {showDeveloperNotes && (
+        <DeveloperNotes onClose={() => setShowDeveloperNotes(false)} />
+      )}
+    </>
   );
 };
 
