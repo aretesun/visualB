@@ -6,6 +6,7 @@ import AddCardButton from './components/AddCardButton';
 import LinksMenu from './components/LinksMenu';
 import Toast from './components/Toast';
 import SettingsMenu from './components/SettingsMenu';
+import ImageUrlModal from './components/ImageUrlModal';
 
 const MAX_CARDS = 100;
 
@@ -19,6 +20,11 @@ const BACKGROUND_IMAGES = [
   'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop', // 산
   'https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=2074&auto=format&fit=crop', // 호수
   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2071&auto=format&fit=crop', // 숲길
+  'https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2070&auto=format&fit=crop', // 오로라
+  'https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80&w=2074&auto=format&fit=crop', // 산 호수
+  'https://images.unsplash.com/photo-1426604966848-d7adac402bff?q=80&w=2070&auto=format&fit=crop', // 숲 햇살
+  'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=2070&auto=format&fit=crop', // 열대 해변
+  'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?q=80&w=2070&auto=format&fit=crop', // 사막 풍경
 
   // 여행지
   'https://images.unsplash.com/photo-1502602898657-3e91760c0341?q=80&w=2073&auto=format&fit=crop', // 파리
@@ -31,6 +37,11 @@ const BACKGROUND_IMAGES = [
   'https://images.unsplash.com/photo-1490806230066-428c82a441b8?q=80&w=2070&auto=format&fit=crop', // 바다 여행
   'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=2070&auto=format&fit=crop', // 호수 여행
   'https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=2035&auto=format&fit=crop', // 기차 여행
+  'https://images.unsplash.com/photo-1529963183134-61a90db47eaf?q=80&w=2070&auto=format&fit=crop', // 아이슬란드
+  'https://images.unsplash.com/photo-1506929562872-bb421503ef21?q=80&w=2068&auto=format&fit=crop', // 북유럽
+  'https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=2071&auto=format&fit=crop', // 몰디브
+  'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=2080&auto=format&fit=crop', // 중국 여행
+  'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop', // 프라하
 ];
 
 const App: React.FC = () => {
@@ -59,6 +70,8 @@ const App: React.FC = () => {
     return maxId + 1;
   });
   const [toastMessage, setToastMessage] = useState<string>('');
+  const [showUrlModal, setShowUrlModal] = useState<boolean>(false);
+  const [urlInputItemId, setUrlInputItemId] = useState<number | null>(null);
 
   const refreshBackground = useCallback(() => {
     // 배경 이미지 배열에서 랜덤하게 선택
@@ -77,6 +90,9 @@ const App: React.FC = () => {
       localStorage.setItem('visionBoardItems', JSON.stringify(items));
     } catch (error) {
       console.error("Failed to save items to localStorage", error);
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        setToastMessage('저장 공간이 부족합니다. 일부 카드를 삭제하거나 URL로 이미지를 추가해주세요.');
+      }
     }
   }, [items]);
 
@@ -111,6 +127,18 @@ const App: React.FC = () => {
     setItems(prevItems =>
       prevItems.map(item => (item.id === id ? { ...item, imageUrl } : item))
     );
+  };
+  const handleRequestUrlInput = (id: number) => {
+    setUrlInputItemId(id);
+    setShowUrlModal(true);
+  };
+
+  const handleUrlSubmit = (url: string) => {
+    if (urlInputItemId !== null) {
+      updateItemImage(urlInputItemId, url);
+    }
+    setShowUrlModal(false);
+    setUrlInputItemId(null);
   };
 
   const deleteItem = (id: number) => {
@@ -149,6 +177,8 @@ const App: React.FC = () => {
           onImageChange={updateItemImage}
           onDelete={deleteItem}
           onBringToFront={bringToFront}
+          onRequestUrlInput={handleRequestUrlInput}
+          isUrlModalOpen={urlInputItemId === item.id && showUrlModal}
         />
       ))}
 
@@ -162,6 +192,12 @@ const App: React.FC = () => {
       />
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage('')} />
+      )}
+      {showUrlModal && (
+        <ImageUrlModal
+          onSubmit={handleUrlSubmit}
+          onClose={() => setShowUrlModal(false)}
+        />
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Card, Position } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { TrashIcon, EditIcon, CheckIcon } from './Icons';
+import ImageSourceDropdown from './ImageSourceDropdown';
 
 interface VisionItemProps {
   item: Card;
@@ -10,6 +11,8 @@ interface VisionItemProps {
   onImageChange: (id: number, imageUrl: string) => void;
   onDelete: (id: number) => void;
   onBringToFront: (id: number) => void;
+  onRequestUrlInput: (id: number) => void;
+  isUrlModalOpen?: boolean;
 }
 
 const VisionItem: React.FC<VisionItemProps> = ({
@@ -18,7 +21,9 @@ const VisionItem: React.FC<VisionItemProps> = ({
   onTextChange,
   onImageChange,
   onDelete,
-  onBringToFront
+  onBringToFront,
+  onRequestUrlInput,
+  isUrlModalOpen = false
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
   const { position, isDragging } = useDraggable({
@@ -31,8 +36,11 @@ const VisionItem: React.FC<VisionItemProps> = ({
   const [editText, setEditText] = useState(item.text || '');
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSelectingFile, setIsSelectingFile] = useState(false); // 파일 선택 중 상태
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageAddButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isEditingText && textareaRef.current) {
@@ -45,12 +53,12 @@ const VisionItem: React.FC<VisionItemProps> = ({
   }, [isEditingText]);
 
   // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
-  // 단, 파일 선택 중일 때는 삭제하지 않음
+  // 단, 파일 선택 중이거나 드롭다운이 열려있거나 URL 모달이 열려있을 때는 삭제하지 않음
   useEffect(() => {
-    if (!isEditingText && !item.text && !item.imageUrl && !isSelectingFile) {
+    if (!isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen) {
       onDelete(item.id);
     }
-  }, [isEditingText, item.text, item.imageUrl, isSelectingFile, item.id, onDelete]);
+  }, [isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
 
   // 빈 카드가 처음 생성되었을 때 자동 포커스
   useEffect(() => {
@@ -107,7 +115,42 @@ const VisionItem: React.FC<VisionItemProps> = ({
     setIsDragOver(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const compressImage = (file: File, maxWidth = 800, quality = 0.7): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // 최대 너비를 넘으면 비율에 맞게 축소
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          } else {
+            reject(new Error('Canvas context not available'));
+          }
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
@@ -116,26 +159,43 @@ const VisionItem: React.FC<VisionItemProps> = ({
     if (files && files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          onImageChange(item.id, reader.result as string);
-          setIsEditingText(false); // 이미지 추가 후 편집 모드 종료
-        };
-        reader.readAsDataURL(file);
+        try {
+          const compressedImage = await compressImage(file);
+          onImageChange(item.id, compressedImage);
+          setIsEditingText(false);
+        } catch (error) {
+          console.error('이미지 압축 실패:', error);
+          // 압축 실패 시 원본 사용
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            onImageChange(item.id, reader.result as string);
+            setIsEditingText(false);
+          };
+          reader.readAsDataURL(file);
+        }
       }
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        onImageChange(item.id, reader.result as string);
-        setIsEditingText(false); // 이미지 추가 후 편집 모드 종료
+      try {
+        const compressedImage = await compressImage(file);
+        onImageChange(item.id, compressedImage);
+        setIsEditingText(false);
         setIsSelectingFile(false);
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('이미지 압축 실패:', error);
+        // 압축 실패 시 원본 사용
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          onImageChange(item.id, reader.result as string);
+          setIsEditingText(false);
+          setIsSelectingFile(false);
+        };
+        reader.readAsDataURL(file);
+      }
     }
     // onChange가 호출되었지만 파일이 없으면 취소로 간주
     // 약간의 딜레이 후 상태 초기화 (이벤트 처리 완료 대기)
@@ -145,6 +205,17 @@ const VisionItem: React.FC<VisionItemProps> = ({
   };
 
   const handleImageAddClick = () => {
+    if (imageAddButtonRef.current) {
+      const rect = imageAddButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        x: rect.left,
+        y: rect.bottom + 8,
+      });
+    }
+    setShowDropdown(true);
+  };
+
+  const handleUploadFile = () => {
     setIsSelectingFile(true);
 
     // input 요소에 cancel 이벤트 리스너 추가 (지원하는 브라우저)
@@ -158,6 +229,15 @@ const VisionItem: React.FC<VisionItemProps> = ({
     }
 
     fileInputRef.current?.click();
+  };
+
+  const handleGenerateImage = () => {
+    const imageGenerationUrl = 'https://aistudio.google.com/app/prompts?state=%7B%22ids%22:%5B%221aXi6YoflGlRUunosVM7ZBJ7zlxxEiX_s%22%5D,%22action%22:%22open%22,%22userId%22:%22107412687269922622473%22,%22resourceKeys%22:%7B%7D%7D&usp=sharing';
+    window.open(imageGenerationUrl, '_blank');
+  };
+
+  const handleAddByUrl = () => {
+    onRequestUrlInput(item.id);
   };
 
   const isEmpty = !item.text && !item.imageUrl;
@@ -217,6 +297,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
         </div>
       ) : isEmpty && (
         <div
+          ref={imageAddButtonRef}
           className="w-full h-24 border-2 border-dashed border-white/30 rounded-md flex flex-col items-center justify-center text-white/50 hover:border-white/50 hover:text-white/70 transition-colors cursor-pointer"
           onClick={handleImageAddClick}
         >
@@ -225,6 +306,17 @@ const VisionItem: React.FC<VisionItemProps> = ({
           </svg>
           <span className="text-sm">이미지 추가</span>
         </div>
+      )}
+
+      {/* 이미지 소스 드롭다운 - Portal로 body에 렌더링 */}
+      {showDropdown && (
+        <ImageSourceDropdown
+          onUploadFile={handleUploadFile}
+          onGenerateImage={handleGenerateImage}
+          onAddByUrl={handleAddByUrl}
+          onClose={() => setShowDropdown(false)}
+          position={dropdownPosition}
+        />
       )}
 
       <input
@@ -263,6 +355,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
           <TrashIcon className="w-5 h-5" />
         </button>
       </div>
+
     </div>
   );
 };
