@@ -128,6 +128,19 @@ const App: React.FC = () => {
       prevItems.map(item => (item.id === id ? { ...item, imageUrl } : item))
     );
   };
+
+  const updateItemImageSize = (id: number, width: number, height: number) => {
+    setItems(prevItems =>
+      prevItems.map(item => (item.id === id ? { ...item, imageWidth: width, imageHeight: height } : item))
+    );
+  };
+
+  const updateItemImageOffset = useCallback((id: number, offset: Position) => {
+    setItems(prevItems =>
+      prevItems.map(item => (item.id === id ? { ...item, imageOffset: offset } : item))
+    );
+  }, []);
+
   const handleRequestUrlInput = (id: number) => {
     setUrlInputItemId(id);
     setShowUrlModal(true);
@@ -175,6 +188,8 @@ const App: React.FC = () => {
           onPositionChange={updateItemPosition}
           onTextChange={updateItemText}
           onImageChange={updateItemImage}
+          onImageSizeChange={updateItemImageSize}
+          onImageOffsetChange={updateItemImageOffset}
           onDelete={deleteItem}
           onBringToFront={bringToFront}
           onRequestUrlInput={handleRequestUrlInput}

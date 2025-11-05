@@ -19,6 +19,13 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
     isDraggingRef.current = isDragging;
   }, [isDragging]);
 
+  // initialPosition이 변경되면 position도 업데이트 (드래그 중이 아닐 때만)
+  useEffect(() => {
+    if (!isDragging) {
+      setPosition(initialPosition);
+    }
+  }, [initialPosition.x, initialPosition.y, isDragging]);
+
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0) return;
     const targetElement = e.target as HTMLElement;
@@ -31,7 +38,12 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
         }
     } else {
         // Otherwise, allow dragging from the whole element, except interactive parts.
-        if (targetElement.closest('button, textarea, a, input, select')) {
+        if (targetElement.closest('button, textarea, a, input, select, [data-resize-handle]')) {
+            return;
+        }
+        // 이미지 위치 잠금 해제 상태면 카드 드래그 금지
+        const imgElement = targetElement.closest('img[data-image-unlocked]');
+        if (imgElement) {
             return;
         }
     }

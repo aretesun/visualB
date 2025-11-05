@@ -9,6 +9,8 @@ interface VisionItemProps {
   onPositionChange: (id: number, position: Position) => void;
   onTextChange: (id: number, text: string) => void;
   onImageChange: (id: number, imageUrl: string) => void;
+  onImageSizeChange: (id: number, width: number, height: number) => void;
+  onImageOffsetChange: (id: number, offset: Position) => void;
   onDelete: (id: number) => void;
   onBringToFront: (id: number) => void;
   onRequestUrlInput: (id: number) => void;
@@ -20,16 +22,21 @@ const VisionItem: React.FC<VisionItemProps> = ({
   onPositionChange,
   onTextChange,
   onImageChange,
+  onImageSizeChange,
+  onImageOffsetChange,
   onDelete,
   onBringToFront,
   onRequestUrlInput,
   isUrlModalOpen = false
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
+
   const { position, isDragging } = useDraggable({
     ref: itemRef,
     initialPosition: item.position,
-    onDragEnd: (newPosition) => onPositionChange(item.id, newPosition),
+    onDragEnd: (newPosition) => {
+      onPositionChange(item.id, newPosition);
+    },
   });
 
   const [isEditingText, setIsEditingText] = useState(!item.text && !item.imageUrl);
@@ -38,9 +45,17 @@ const VisionItem: React.FC<VisionItemProps> = ({
   const [isSelectingFile, setIsSelectingFile] = useState(false); // 파일 선택 중 상태
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
+  const [isResizing, setIsResizing] = useState(false);
+  const [isEditingImage, setIsEditingImage] = useState(false); // 이미지 편집 모드
+  const [isDraggingImage, setIsDraggingImage] = useState(false); // 이미지 드래그 중
+  const [isImageLocked, setIsImageLocked] = useState(true); // 이미지 위치 잠금 (기본: 잠금)
+  const [showBoundaryWarning, setShowBoundaryWarning] = useState(false); // 경계 경고
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageAddButtonRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const editImageButtonRef = useRef<HTMLButtonElement>(null);
+  const imgElementRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (isEditingText && textareaRef.current) {
@@ -68,6 +83,101 @@ const VisionItem: React.FC<VisionItemProps> = ({
       }, 100);
     }
   }, []);
+
+  // 카드 크기 변경 시 이미지 오프셋 자동 보정
+  useEffect(() => {
+    if (!item.imageUrl || !imgElementRef.current) return;
+
+    const imgElement = imgElementRef.current;
+
+    // 이미지가 로드되지 않았으면 대기
+    if (!imgElement.complete) {
+      const handleLoad = () => {
+        correctImageOffset();
+      };
+      imgElement.addEventListener('load', handleLoad);
+      return () => imgElement.removeEventListener('load', handleLoad);
+    }
+
+    correctImageOffset();
+
+    function correctImageOffset() {
+      if (!imgElementRef.current) return;
+
+      const imageNaturalWidth = imgElementRef.current.naturalWidth;
+      const imageNaturalHeight = imgElementRef.current.naturalHeight;
+      const cardWidth = item.imageWidth || 232;
+      const cardHeight = item.imageHeight || 160;
+
+      // object-fit: cover 사용 시 실제 렌더링되는 이미지 크기 계산
+      const imageAspectRatio = imageNaturalWidth / imageNaturalHeight;
+      const cardAspectRatio = cardWidth / cardHeight;
+
+      let renderedWidth, renderedHeight;
+
+      if (imageAspectRatio > cardAspectRatio) {
+        // 이미지가 더 넓음 -> 높이에 맞춤
+        renderedHeight = cardHeight;
+        renderedWidth = renderedHeight * imageAspectRatio;
+      } else {
+        // 이미지가 더 높음 -> 너비에 맞춤
+        renderedWidth = cardWidth;
+        renderedHeight = renderedWidth / imageAspectRatio;
+      }
+
+      const currentOffsetX = item.imageOffset?.x || 0;
+      const currentOffsetY = item.imageOffset?.y || 0;
+
+      let needsCorrection = false;
+      let correctedOffsetX = currentOffsetX;
+      let correctedOffsetY = currentOffsetY;
+
+      // X축 독립적 체크
+      if (renderedWidth <= cardWidth) {
+        // 렌더링된 이미지가 카드보다 작거나 같으면 offset은 0이어야 함
+        if (currentOffsetX !== 0) {
+          correctedOffsetX = 0;
+          needsCorrection = true;
+        }
+      } else {
+        // 렌더링된 이미지가 카드보다 크면 범위 체크
+        const minOffsetX = cardWidth - renderedWidth;
+        const maxOffsetX = 0;
+        if (currentOffsetX < minOffsetX) {
+          correctedOffsetX = minOffsetX;
+          needsCorrection = true;
+        } else if (currentOffsetX > maxOffsetX) {
+          correctedOffsetX = maxOffsetX;
+          needsCorrection = true;
+        }
+      }
+
+      // Y축 독립적 체크
+      if (renderedHeight <= cardHeight) {
+        // 렌더링된 이미지가 카드보다 작거나 같으면 offset은 0이어야 함
+        if (currentOffsetY !== 0) {
+          correctedOffsetY = 0;
+          needsCorrection = true;
+        }
+      } else {
+        // 렌더링된 이미지가 카드보다 크면 범위 체크
+        const minOffsetY = cardHeight - renderedHeight;
+        const maxOffsetY = 0;
+        if (currentOffsetY < minOffsetY) {
+          correctedOffsetY = minOffsetY;
+          needsCorrection = true;
+        } else if (currentOffsetY > maxOffsetY) {
+          correctedOffsetY = maxOffsetY;
+          needsCorrection = true;
+        }
+      }
+
+      // 보정이 필요하면 업데이트
+      if (needsCorrection) {
+        onImageOffsetChange(item.id, { x: correctedOffsetX, y: correctedOffsetY });
+      }
+    }
+  }, [item.imageWidth, item.imageHeight, item.imageUrl, item.imageOffset, item.id, onImageOffsetChange]);
 
   const handleSave = () => {
     // 텍스트 입력이 있으면 저장
@@ -217,6 +327,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
 
   const handleUploadFile = () => {
     setIsSelectingFile(true);
+    setIsEditingImage(false); // 편집 모드 종료
 
     // input 요소에 cancel 이벤트 리스너 추가 (지원하는 브라우저)
     const input = fileInputRef.current;
@@ -234,13 +345,270 @@ const VisionItem: React.FC<VisionItemProps> = ({
   const handleGenerateImage = () => {
     const imageGenerationUrl = 'https://aistudio.google.com/app/prompts?state=%7B%22ids%22:%5B%221aXi6YoflGlRUunosVM7ZBJ7zlxxEiX_s%22%5D,%22action%22:%22open%22,%22userId%22:%22107412687269922622473%22,%22resourceKeys%22:%7B%7D%7D&usp=sharing';
     window.open(imageGenerationUrl, '_blank');
+    setIsEditingImage(false); // 편집 모드 종료
   };
 
   const handleAddByUrl = () => {
     onRequestUrlInput(item.id);
+    setIsEditingImage(false); // 편집 모드 종료
+  };
+
+  const handleEditImage = () => {
+    setIsEditingImage(true);
+    // 편집 버튼 위치 기준으로 드롭다운 표시
+    if (editImageButtonRef.current) {
+      const rect = editImageButtonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        x: rect.left,
+        y: rect.bottom + 8,
+      });
+    }
+    setShowDropdown(true);
+  };
+
+  const handleCloseEditImage = () => {
+    setIsEditingImage(false);
+    setShowDropdown(false);
+  };
+
+  // 이미지 드래그 핸들러 (마스크 기능)
+  const handleImageDragStart = (e: React.PointerEvent) => {
+    // 잠금 상태면 카드 드래그가 작동하도록 아무것도 안 함
+    if (isImageLocked) {
+      return;
+    }
+
+    // 잠금 해제 상태: 이미지 드래그만 허용, 카드 드래그 차단
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 이미지 실제 크기 가져오기
+    const imgElement = e.currentTarget as HTMLImageElement;
+    const imageNaturalWidth = imgElement.naturalWidth;
+    const imageNaturalHeight = imgElement.naturalHeight;
+
+    const cardWidth = item.imageWidth || 232;
+    const cardHeight = item.imageHeight || 160;
+
+    // object-fit: cover 사용 시 실제 렌더링되는 이미지 크기 계산
+    const imageAspectRatio = imageNaturalWidth / imageNaturalHeight;
+    const cardAspectRatio = cardWidth / cardHeight;
+
+    let renderedWidth, renderedHeight;
+
+    if (imageAspectRatio > cardAspectRatio) {
+      // 이미지가 더 넓음 -> 높이에 맞춤
+      renderedHeight = cardHeight;
+      renderedWidth = renderedHeight * imageAspectRatio;
+    } else {
+      // 이미지가 더 높음 -> 너비에 맞춤
+      renderedWidth = cardWidth;
+      renderedHeight = renderedWidth / imageAspectRatio;
+    }
+
+    // X축과 Y축 모두 렌더링된 이미지가 카드보다 작거나 같으면 이동 불가
+    const canMoveX = renderedWidth > cardWidth;
+    const canMoveY = renderedHeight > cardHeight;
+
+    if (!canMoveX && !canMoveY) {
+      setShowBoundaryWarning(true);
+      setTimeout(() => setShowBoundaryWarning(false), 800);
+      return;
+    }
+
+    setIsDraggingImage(true);
+    onBringToFront(item.id);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startOffsetX = item.imageOffset?.x || 0;
+    const startOffsetY = item.imageOffset?.y || 0;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      let finalOffsetX = startOffsetX;
+      let finalOffsetY = startOffsetY;
+      let hitBoundary = false;
+
+      // X축: 렌더링된 이미지가 카드보다 클 때만 이동 가능
+      if (renderedWidth > cardWidth) {
+        const desiredOffsetX = startOffsetX + deltaX;
+        const minOffsetX = cardWidth - renderedWidth;
+        const maxOffsetX = 0;
+        const clampedOffsetX = Math.max(minOffsetX, Math.min(maxOffsetX, desiredOffsetX));
+
+        if (desiredOffsetX !== clampedOffsetX) {
+          hitBoundary = true;
+        }
+        finalOffsetX = clampedOffsetX;
+      }
+
+      // Y축: 렌더링된 이미지가 카드보다 클 때만 이동 가능
+      if (renderedHeight > cardHeight) {
+        const desiredOffsetY = startOffsetY + deltaY;
+        const minOffsetY = cardHeight - renderedHeight;
+        const maxOffsetY = 0;
+        const clampedOffsetY = Math.max(minOffsetY, Math.min(maxOffsetY, desiredOffsetY));
+
+        if (desiredOffsetY !== clampedOffsetY) {
+          hitBoundary = true;
+        }
+        finalOffsetY = clampedOffsetY;
+      }
+
+      if (hitBoundary) {
+        setShowBoundaryWarning(true);
+        setTimeout(() => setShowBoundaryWarning(false), 800);
+      }
+
+      onImageOffsetChange(item.id, { x: finalOffsetX, y: finalOffsetY });
+    };
+
+    const handlePointerUp = () => {
+      setIsDraggingImage(false);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+  };
+
+  // 카드 리사이즈 핸들러 (모든 방향)
+  const handleResizeStart = (e: React.MouseEvent | React.PointerEvent, direction: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    onBringToFront(item.id);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startCardWidth = cardWidth; // 현재 카드 너비
+    const startImageHeight = item.imageHeight || 160; // 기본값 160px
+    const startPosX = position.x;
+    const startPosY = position.y;
+
+    // 리사이즈 중 현재 위치와 크기를 추적
+    let currentPosX = startPosX;
+    let currentPosY = startPosY;
+    let currentCardWidth = startCardWidth;
+    let currentImageHeight = startImageHeight;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      let newCardWidth = currentCardWidth;
+      let newImageHeight = currentImageHeight;
+      let newPosX = currentPosX;
+      let newPosY = currentPosY;
+
+      // 방향에 따라 크기 및 위치 조절
+      if (direction.includes('e')) { // 동쪽 (오른쪽 변)
+        // 오른쪽으로 드래그 → 너비 증가 (왼쪽 경계 고정)
+        newCardWidth = Math.max(200, Math.min(1000, startCardWidth + deltaX));
+        newPosX = startPosX; // 왼쪽 경계 고정
+      }
+      if (direction.includes('w')) { // 서쪽 (왼쪽 변)
+        // 왼쪽으로 드래그 → 너비 증가 (오른쪽 경계 고정)
+        const proposedWidth = startCardWidth - deltaX;
+        newCardWidth = Math.max(200, Math.min(1000, proposedWidth));
+        // 오른쪽 경계를 고정하려면: 새 왼쪽 위치 = 시작 위치 + (시작 너비 - 새 너비)
+        newPosX = startPosX + (startCardWidth - newCardWidth);
+      }
+      if (direction.includes('s')) { // 남쪽 (아래 변)
+        // 아래로 드래그 → 높이 증가 (위쪽 경계 고정)
+        newImageHeight = Math.max(100, Math.min(800, startImageHeight + deltaY));
+        newPosY = startPosY; // 위쪽 경계 고정
+      }
+      if (direction.includes('n')) { // 북쪽 (위 변)
+        // 위로 드래그 → 높이 증가 (아래쪽 경계 고정)
+        const proposedHeight = startImageHeight - deltaY;
+        newImageHeight = Math.max(100, Math.min(800, proposedHeight));
+        // 아래쪽 경계를 고정하려면: 새 위쪽 위치 = 시작 위치 + (시작 높이 - 새 높이)
+        newPosY = startPosY + (startImageHeight - newImageHeight);
+      }
+
+      // 현재 값 업데이트
+      currentCardWidth = newCardWidth;
+      currentImageHeight = newImageHeight;
+      currentPosX = newPosX;
+      currentPosY = newPosY;
+
+      // 이미지 너비는 카드 너비 - 패딩(24px)
+      const newImageWidth = newCardWidth - 24;
+
+      onImageSizeChange(item.id, newImageWidth, newImageHeight);
+      onPositionChange(item.id, { x: newPosX, y: newPosY });
+    };
+
+    const handlePointerUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      // 리사이즈 완료 후 이미지 offset 보정
+      if (item.imageUrl && imgElementRef.current && item.imageOffset) {
+        const imgElement = imgElementRef.current;
+        const imageNaturalWidth = imgElement.naturalWidth;
+        const imageNaturalHeight = imgElement.naturalHeight;
+        const cardWidth = (item.imageWidth || 232);
+        const cardHeight = (item.imageHeight || 160);
+
+        // object-fit: cover 사용 시 실제 렌더링되는 이미지 크기 계산
+        const imageAspectRatio = imageNaturalWidth / imageNaturalHeight;
+        const cardAspectRatio = cardWidth / cardHeight;
+
+        let renderedWidth, renderedHeight;
+
+        if (imageAspectRatio > cardAspectRatio) {
+          // 이미지가 더 넓음 -> 높이에 맞춤
+          renderedHeight = cardHeight;
+          renderedWidth = renderedHeight * imageAspectRatio;
+        } else {
+          // 이미지가 더 높음 -> 너비에 맞춤
+          renderedWidth = cardWidth;
+          renderedHeight = renderedWidth / imageAspectRatio;
+        }
+
+        let correctedOffsetX = item.imageOffset.x || 0;
+        let correctedOffsetY = item.imageOffset.y || 0;
+
+        // X축 보정
+        if (renderedWidth > cardWidth) {
+          const minOffsetX = cardWidth - renderedWidth;
+          correctedOffsetX = Math.max(minOffsetX, Math.min(0, correctedOffsetX));
+        } else {
+          correctedOffsetX = 0;
+        }
+
+        // Y축 보정
+        if (renderedHeight > cardHeight) {
+          const minOffsetY = cardHeight - renderedHeight;
+          correctedOffsetY = Math.max(minOffsetY, Math.min(0, correctedOffsetY));
+        } else {
+          correctedOffsetY = 0;
+        }
+
+        // 보정이 필요하면 업데이트
+        if (correctedOffsetX !== (item.imageOffset.x || 0) || correctedOffsetY !== (item.imageOffset.y || 0)) {
+          onImageOffsetChange(item.id, { x: correctedOffsetX, y: correctedOffsetY });
+        }
+      }
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
   };
 
   const isEmpty = !item.text && !item.imageUrl;
+
+  // 카드 너비: 이미지가 있으면 이미지 너비 + 패딩(24px), 없으면 기본값
+  const cardWidth = item.imageUrl
+    ? (item.imageWidth || 232) + 24
+    : 256;
 
   return (
     <div
@@ -250,12 +618,15 @@ const VisionItem: React.FC<VisionItemProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute w-64 rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border border-white/20 p-3 ${
+      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border border-white/20 p-3 ${
         isDragging ? 'shadow-black/50 scale-105 z-50' : 'shadow-black/30'
-      } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''}`}
+      } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${
+        isResizing ? 'cursor-nwse-resize' : ''
+      }`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
+        width: `${cardWidth}px`,
         touchAction: 'none',
       }}
       tabIndex={0}
@@ -287,12 +658,29 @@ const VisionItem: React.FC<VisionItemProps> = ({
 
       {/* 이미지 */}
       {item.imageUrl ? (
-        <div className="w-full relative">
+        <div
+          ref={imageRef}
+          className={`relative group/image overflow-hidden rounded-md transition-all duration-200 ${
+            showBoundaryWarning ? 'ring-2 ring-yellow-300/70' : ''
+          }`}
+          style={{
+            width: item.imageWidth || 232,
+            height: item.imageHeight || 160,
+          }}
+        >
           <img
+            ref={imgElementRef}
             src={item.imageUrl}
             alt="Vision board item"
-            className="w-full h-40 object-cover rounded-md"
+            className={`absolute object-cover ${isImageLocked ? 'cursor-default' : 'cursor-move'}`}
+            style={{
+              transform: `translate(${item.imageOffset?.x || 0}px, ${item.imageOffset?.y || 0}px)`,
+              minWidth: '100%',
+              minHeight: '100%',
+            }}
             draggable="false"
+            data-image-unlocked={!isImageLocked || undefined}
+            onPointerDown={handleImageDragStart}
           />
         </div>
       ) : isEmpty && (
@@ -327,34 +715,201 @@ const VisionItem: React.FC<VisionItemProps> = ({
         className="hidden"
       />
 
-      {/* 컨트롤 버튼 */}
-      <div className="absolute bottom-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      {/* 컨트롤 버튼 - 우측 하단 */}
+      <div className="absolute bottom-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
+        {/* 이미지 위치 잠금/해제 버튼 */}
+        {item.imageUrl && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsImageLocked(!isImageLocked);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className={`p-1.5 rounded-md shadow-lg ${
+              isImageLocked
+                ? 'bg-gray-500/80 hover:bg-gray-500'
+                : 'bg-yellow-500/80 hover:bg-yellow-500'
+            }`}
+            aria-label={isImageLocked ? "Unlock image position" : "Lock image position"}
+            title={isImageLocked ? "이미지 위치 잠금 해제" : "이미지 위치 잠금"}
+          >
+            {isImageLocked ? (
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              </svg>
+            )}
+          </button>
+        )}
+        {/* 텍스트 편집 버튼 */}
         {item.text && !isEditingText && (
           <button
-            onClick={() => setIsEditingText(true)}
-            className="p-1 text-white/70 hover:text-white"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditingText(true);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="p-1.5 bg-white/20 hover:bg-white/30 rounded-md shadow-lg"
             aria-label="Edit text"
           >
-            <EditIcon className="w-5 h-5" />
+            <EditIcon className="w-4 h-4 text-white" />
           </button>
         )}
+        {/* 텍스트 저장 버튼 */}
         {isEditingText && (
           <button
-            onClick={handleSave}
-            className="p-1 text-green-300 hover:text-green-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSave();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="p-1.5 bg-green-500/80 hover:bg-green-500 rounded-md shadow-lg"
             aria-label="Save changes"
           >
-            <CheckIcon className="w-5 h-5" />
+            <CheckIcon className="w-4 h-4 text-white" />
           </button>
         )}
+        {/* 이미지 편집 버튼 */}
+        {item.imageUrl && !isEditingImage && (
+          <button
+            ref={editImageButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEditImage();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="p-1.5 bg-blue-500/80 hover:bg-blue-500 rounded-md shadow-lg"
+            aria-label="Edit image"
+            title="이미지 변경"
+          >
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
+        )}
+        {/* 이미지 편집 완료 버튼 */}
+        {isEditingImage && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCloseEditImage();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="p-1.5 bg-green-500/80 hover:bg-green-500 rounded-md shadow-lg"
+            aria-label="Close image edit"
+          >
+            <CheckIcon className="w-4 h-4 text-white" />
+          </button>
+        )}
+        {/* 삭제 버튼 */}
         <button
-          onClick={() => onDelete(item.id)}
-          className="p-1 text-red-400 hover:text-red-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(item.id);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-md shadow-lg"
           aria-label="Delete item"
         >
-          <TrashIcon className="w-5 h-5" />
+          <TrashIcon className="w-4 h-4 text-white" />
         </button>
       </div>
+
+      {/* 리사이즈 핸들 - 모든 모서리와 변 (윈도우 스타일) */}
+      {/* 모서리 */}
+      {/* 우하단 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'se');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+      {/* 우상단 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'ne');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+      {/* 좌하단 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'sw');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+      {/* 좌상단 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'nw');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+
+      {/* 변 (테두리) */}
+      {/* 오른쪽 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'e');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-3 right-0 bottom-3 w-1 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+      {/* 왼쪽 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'w');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-3 left-0 bottom-3 w-1 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+      {/* 아래 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 's');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute bottom-0 left-3 right-3 h-1 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
+      {/* 위 */}
+      <div
+        data-resize-handle
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleResizeStart(e as any, 'n');
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="absolute top-0 left-3 right-3 h-1 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
+        style={{ touchAction: 'none' }}
+      />
 
     </div>
   );

@@ -1,1 +1,54 @@
 @import "tailwindcss";
+
+@layer utilities {
+  @keyframes bounce-horizontal {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-8px);
+    }
+    75% {
+      transform: translateX(8px);
+    }
+  }
+
+  @keyframes bounce-vertical {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    25% {
+      transform: translateY(-8px);
+    }
+    75% {
+      transform: translateY(8px);
+    }
+  }
+
+  @keyframes bounce-both {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(-6px, -6px);
+    }
+    50% {
+      transform: translate(6px, -6px);
+    }
+    75% {
+      transform: translate(-6px, 6px);
+    }
+  }
+
+  .animate-bounce-horizontal {
+    animation: bounce-horizontal 0.5s ease-in-out;
+  }
+
+  .animate-bounce-vertical {
+    animation: bounce-vertical 0.5s ease-in-out;
+  }
+
+  .animate-bounce-both {
+    animation: bounce-both 0.5s ease-in-out;
+  }
+}
