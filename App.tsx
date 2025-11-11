@@ -517,8 +517,9 @@ const App: React.FC = () => {
           <span className="text-sm font-medium">공유된 비전보드 보기 (읽기 전용)</span>
           <button
             onClick={() => {
-              setIsSharedView(false);
-              setItems([]);
+              // sessionStorage 삭제
+              sessionStorage.removeItem('sharedBoardItems');
+              // 페이지 새로고침하면 localStorage에서 자동으로 로드됨
               window.location.reload();
             }}
             className="ml-2 text-xs underline hover:text-white/80"
