@@ -33,7 +33,7 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center space-x-2 mb-3">
               <span className="text-lg font-semibold">✨ v1.3.0</span>
-              <span className="text-sm text-white/60">2025-01-05</span>
+              <span className="text-sm text-white/60">2025-11-05</span>
             </div>
             <ul className="space-y-2 text-sm text-white/80 ml-4">
               <li className="flex items-start space-x-2">
@@ -55,7 +55,7 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center space-x-2 mb-3">
               <span className="text-lg font-semibold">🎨 v1.2.0</span>
-              <span className="text-sm text-white/60">2025-01-04</span>
+              <span className="text-sm text-white/60">2025-11-04</span>
             </div>
             <ul className="space-y-2 text-sm text-white/80 ml-4">
               <li className="flex items-start space-x-2">
@@ -76,7 +76,7 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center space-x-2 mb-3">
               <span className="text-lg font-semibold">🔧 v1.1.0</span>
-              <span className="text-sm text-white/60">2025-01-03</span>
+              <span className="text-sm text-white/60">2025-11-03</span>
             </div>
             <ul className="space-y-2 text-sm text-white/80 ml-4">
               <li className="flex items-start space-x-2">

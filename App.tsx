@@ -7,8 +7,14 @@ import LinksMenu from './components/LinksMenu';
 import Toast from './components/Toast';
 import SettingsMenu from './components/SettingsMenu';
 import ImageUrlModal from './components/ImageUrlModal';
+import ShareModal from './components/ShareModal';
 
 const MAX_CARDS = 100;
+
+// Cloudflare Worker API URL
+// 배포 후 여기에 실제 Worker URL을 입력하세요
+// 예: 'https://vision-board-api.your-username.workers.dev'
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
 
 // 자연, 풍경, 여행 테마의 배경 이미지들
 const BACKGROUND_IMAGES = [
@@ -45,24 +51,8 @@ const BACKGROUND_IMAGES = [
 ];
 
 const App: React.FC = () => {
-  const [items, setItems] = useState<Card[]>(() => {
-    try {
-      const savedItems = localStorage.getItem('visionBoardItems');
-      const parsedItems = savedItems ? JSON.parse(savedItems) : [];
-      // 기존 데이터 마이그레이션: type 기반 데이터를 새 구조로 변환
-      return parsedItems.map((item: any) => {
-        if (item.type === 'text') {
-          return { id: item.id, position: item.position, text: item.text };
-        } else if (item.type === 'image') {
-          return { id: item.id, position: item.position, imageUrl: item.url };
-        }
-        return item;
-      });
-    } catch (error) {
-      console.error("Failed to load items from localStorage", error);
-      return [];
-    }
-  });
+  const [items, setItems] = useState<Card[]>([]);
+  const [isLoadingShared, setIsLoadingShared] = useState(false);
 
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [nextId, setNextId] = useState<number>(() => {
@@ -73,11 +63,81 @@ const App: React.FC = () => {
   const [showUrlModal, setShowUrlModal] = useState<boolean>(false);
   const [urlInputItemId, setUrlInputItemId] = useState<number | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [showShareModal, setShowShareModal] = useState<boolean>(false);
 
   const refreshBackground = useCallback(() => {
     // 배경 이미지 배열에서 랜덤하게 선택
     const randomIndex = Math.floor(Math.random() * BACKGROUND_IMAGES.length);
     setBackgroundImage(BACKGROUND_IMAGES[randomIndex]);
+  }, []);
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // 1. URL 파라미터에서 공유된 ID 체크
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareId = urlParams.get('id');
+        const legacyData = urlParams.get('data'); // 기존 방식 호환
+
+        if (shareId && WORKER_URL) {
+          // Worker에서 데이터 로드 (새로운 방식)
+          setIsLoadingShared(true);
+          try {
+            const response = await fetch(`${WORKER_URL}/load?id=${shareId}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.items) {
+                setItems(data.items);
+                setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
+                // URL 파라미터 제거 (깔끔하게)
+                window.history.replaceState({}, '', window.location.pathname);
+                return;
+              }
+            }
+          } catch (error) {
+            console.error('Failed to load shared data from Worker:', error);
+            setToastMessage('⚠️ 공유된 비전보드를 불러오는데 실패했습니다');
+          } finally {
+            setIsLoadingShared(false);
+          }
+        } else if (legacyData) {
+          // 기존 base64 방식 (호환성 유지)
+          try {
+            const jsonData = decodeURIComponent(atob(legacyData));
+            const sharedItems = JSON.parse(jsonData) as Card[];
+            setItems(sharedItems);
+            setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
+            window.history.replaceState({}, '', window.location.pathname);
+            return;
+          } catch (error) {
+            console.error('Failed to load legacy shared data:', error);
+          }
+        }
+
+        // 2. localStorage에서 로드
+        const savedItems = localStorage.getItem('visionBoardItems');
+        if (savedItems) {
+          const parsedItems = JSON.parse(savedItems);
+          // 기존 데이터 마이그레이션
+          const migratedItems = parsedItems.map((item: any) => {
+            if (item.type === 'text') {
+              return { id: item.id, position: item.position, text: item.text };
+            } else if (item.type === 'image') {
+              return { id: item.id, position: item.position, imageUrl: item.url };
+            }
+            return item;
+          });
+          setItems(migratedItems);
+        }
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+        setToastMessage('⚠️ 데이터를 불러오는데 실패했습니다');
+      }
+    };
+
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -218,6 +278,216 @@ const App: React.FC = () => {
     setNextId(maxId + 1);
   };
 
+  // 공유 기능들
+  const handleShareAsImage = async () => {
+    try {
+      setToastMessage('이미지를 생성하는 중...');
+
+      // html2canvas를 동적으로 로드
+      const html2canvas = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+
+      // 현재 화면을 캡처할 대상 요소
+      const element = document.querySelector('.relative.w-screen.h-screen') as HTMLElement;
+      if (!element) {
+        setToastMessage('화면 캡처에 실패했습니다');
+        return;
+      }
+
+      // 모든 이미지가 로드될 때까지 대기
+      const images = element.querySelectorAll('img');
+
+      const imagePromises = Array.from(images).map((img) => {
+        if (img.complete && img.naturalWidth > 0) {
+          return Promise.resolve();
+        }
+        return new Promise((resolve) => {
+          img.onload = () => resolve(null);
+          img.onerror = () => resolve(null); // 에러나도 진행
+          // 타임아웃 설정
+          setTimeout(() => resolve(null), 3000);
+        });
+      });
+
+      await Promise.all(imagePromises);
+
+      // 배경 이미지 로딩 대기
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 캡처 실행
+      const canvas = await html2canvas.default(element, {
+        allowTaint: false,
+        useCORS: true, // ✅ CORS 활성화
+        backgroundColor: '#000000',
+        scale: 1.5, // 해상도 약간 낮춤 (성능 개선)
+        logging: false, // 콘솔 로그 숨기기
+        width: window.innerWidth,
+        height: window.innerHeight,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+        ignoreElements: (element) => {
+          // fixed 요소들과 hover 시에만 보이는 요소들 제외
+          if (element.classList.contains('fixed')) return true;
+
+          // opacity-0 요소들 (버튼, 리사이즈 핸들 등) 제외
+          if (element.classList.contains('opacity-0')) return true;
+
+          // group-hover:opacity-100 요소들도 제외
+          const classList = Array.from(element.classList);
+          if (classList.some(c => c.includes('group-hover'))) return true;
+
+          return false;
+        },
+        onclone: (clonedDoc) => {
+          // 복제된 DOM에서 최신 CSS 제거 및 단순화
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const classList = htmlEl.classList;
+
+            if (classList) {
+              const classesToRemove: string[] = [];
+
+              // backdrop-blur 제거
+              classList.forEach((className) => {
+                if (className.includes('backdrop-blur')) {
+                  classesToRemove.push(className);
+                }
+              });
+
+              classesToRemove.forEach((className) => classList.remove(className));
+
+              // Tailwind 색상 클래스를 인라인 스타일로 변환
+              if (classList.contains('bg-white/10')) {
+                htmlEl.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              }
+              if (classList.contains('bg-white/20')) {
+                htmlEl.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+              }
+              if (classList.contains('bg-white/30')) {
+                htmlEl.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+              }
+              if (classList.contains('border-white/20')) {
+                htmlEl.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+              }
+              if (classList.contains('border-white/30')) {
+                htmlEl.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }
+              if (classList.contains('border-white/50')) {
+                htmlEl.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+              }
+              if (classList.contains('text-white/40')) {
+                htmlEl.style.color = 'rgba(255, 255, 255, 0.4)';
+              }
+              if (classList.contains('text-white/50')) {
+                htmlEl.style.color = 'rgba(255, 255, 255, 0.5)';
+              }
+              if (classList.contains('text-white/70')) {
+                htmlEl.style.color = 'rgba(255, 255, 255, 0.7)';
+              }
+            }
+
+            // 인라인 스타일에서 backdrop-filter 제거
+            if (htmlEl.style) {
+              if (htmlEl.style.backdropFilter) {
+                htmlEl.style.backdropFilter = 'none';
+              }
+              // opacity가 0이거나 거의 0인 요소는 완전히 보이게
+              const opacity = parseFloat(htmlEl.style.opacity || '1');
+              if (opacity === 0) {
+                htmlEl.style.display = 'none';
+              }
+            }
+          });
+        },
+      });
+
+      // Canvas를 Blob으로 변환
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setToastMessage('이미지 생성에 실패했습니다');
+          return;
+        }
+
+        // 다운로드 링크 생성
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().split('T')[0];
+        link.download = `vision-board-${timestamp}.png`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setToastMessage('이미지가 다운로드되었습니다! 🎉');
+      }, 'image/png');
+    } catch (error) {
+      console.error('Image capture failed:', error);
+      setToastMessage('이미지 다운로드 중 오류가 발생했습니다');
+    }
+  };
+
+  const handleShareAsFile = () => {
+    // 비활성화된 기능 (추후 병합 기능과 함께 구현)
+    setToastMessage('파일 공유 기능은 추후 제공 예정입니다');
+  };
+
+  const handleShareAsLink = async () => {
+    try {
+      setToastMessage('🔗 링크 생성 중...');
+
+      // Worker URL이 설정되어 있으면 새로운 방식 사용
+      if (WORKER_URL) {
+        try {
+          const response = await fetch(`${WORKER_URL}/save`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ items }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          if (data.success && data.id) {
+            const shareUrl = `${window.location.origin}${window.location.pathname}?id=${data.id}`;
+
+            await navigator.clipboard.writeText(shareUrl);
+
+            setToastMessage(`✨ 링크 복사 완료! (${shareUrl.length}자, 3일간 유효)`);
+            return;
+          }
+        } catch (workerError) {
+          console.error('Worker share failed, falling back to legacy method:', workerError);
+          setToastMessage('⚠️ 서버 연결 실패, 로컬 방식으로 전환합니다...');
+          // 폴백: 기존 방식 계속 진행
+        }
+      }
+
+      // 기존 방식 (Worker 미설정 또는 실패 시)
+      const jsonData = JSON.stringify(items);
+      const base64Data = btoa(encodeURIComponent(jsonData));
+      const shareUrl = `${window.location.origin}${window.location.pathname}?data=${base64Data}`;
+
+      if (shareUrl.length > 2000) {
+        setToastMessage('⚠️ 카드가 너무 많아 링크가 너무 깁니다. Worker를 설정하면 해결됩니다.');
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setToastMessage(`🔗 링크 복사 완료! (${shareUrl.length}자)`);
+    } catch (error) {
+      console.error('Link share failed:', error);
+      setToastMessage('❌ 링크 생성 중 오류가 발생했습니다');
+    }
+  };
+
   return (
     <div
       className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000 bg-black"
@@ -241,7 +511,10 @@ const App: React.FC = () => {
         />
       ))}
 
-      <Toolbar onRefreshBackground={refreshBackground} />
+      <Toolbar
+        onRefreshBackground={refreshBackground}
+        onShareClick={() => setShowShareModal(true)}
+      />
       <AddCardButton onAddCard={addCard} />
       <LinksMenu />
       <SettingsMenu
@@ -256,6 +529,14 @@ const App: React.FC = () => {
         <ImageUrlModal
           onSubmit={handleUrlSubmit}
           onClose={() => setShowUrlModal(false)}
+        />
+      )}
+      {showShareModal && (
+        <ShareModal
+          onClose={() => setShowShareModal(false)}
+          onShareAsImage={handleShareAsImage}
+          onShareAsFile={handleShareAsFile}
+          onShareAsLink={handleShareAsLink}
         />
       )}
     </div>
