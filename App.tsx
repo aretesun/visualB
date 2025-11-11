@@ -12,9 +12,7 @@ import ShareModal from './components/ShareModal';
 const MAX_CARDS = 100;
 
 // Cloudflare Worker API URL
-// 배포 후 여기에 실제 Worker URL을 입력하세요
-// 예: 'https://vision-board-api.your-username.workers.dev'
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || '';
+const WORKER_URL = 'https://vision-board-api.yesisun.workers.dev';
 
 // 자연, 풍경, 여행 테마의 배경 이미지들
 const BACKGROUND_IMAGES = [
