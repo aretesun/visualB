@@ -46,7 +46,7 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
               </li>
               <li className="flex items-start space-x-2">
                 <span className="text-yellow-400 mt-1">•</span>
-                <span>공유 링크 3일 자동 만료 (용량 최적화)</span>
+                <span>공유 링크 1일 자동 만료 (용량 최적화)</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="text-yellow-400 mt-1">•</span>
