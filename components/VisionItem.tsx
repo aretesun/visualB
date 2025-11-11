@@ -15,6 +15,7 @@ interface VisionItemProps {
   onBringToFront: (id: number) => void;
   onRequestUrlInput: (id: number) => void;
   isUrlModalOpen?: boolean;
+  isReadOnly?: boolean; // 읽기 전용 모드
 }
 
 const VisionItem: React.FC<VisionItemProps> = ({
@@ -27,7 +28,8 @@ const VisionItem: React.FC<VisionItemProps> = ({
   onDelete,
   onBringToFront,
   onRequestUrlInput,
-  isUrlModalOpen = false
+  isUrlModalOpen = false,
+  isReadOnly = false
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -37,6 +39,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
     onDragEnd: (newPosition) => {
       onPositionChange(item.id, newPosition);
     },
+    disabled: isReadOnly, // 읽기 전용 모드에서 드래그 비활성화
   });
 
   const [isEditingText, setIsEditingText] = useState(!item.text && !item.imageUrl);
@@ -715,7 +718,8 @@ const VisionItem: React.FC<VisionItemProps> = ({
         className="hidden"
       />
 
-      {/* 컨트롤 버튼 - 우측 하단 */}
+      {/* 컨트롤 버튼 - 우측 하단 (읽기 전용 모드에서 숨김) */}
+      {!isReadOnly && (
       <div className="absolute bottom-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20">
         {/* 이미지 위치 잠금/해제 버튼 */}
         {item.imageUrl && (
@@ -817,8 +821,11 @@ const VisionItem: React.FC<VisionItemProps> = ({
           <TrashIcon className="w-4 h-4 text-white" />
         </button>
       </div>
+      )}
 
-      {/* 리사이즈 핸들 - 모든 모서리와 변 (윈도우 스타일) */}
+      {/* 리사이즈 핸들 - 모든 모서리와 변 (윈도우 스타일) (읽기 전용 모드에서 숨김) */}
+      {!isReadOnly && (
+      <>
       {/* 모서리 */}
       {/* 우하단 */}
       <div
@@ -910,6 +917,8 @@ const VisionItem: React.FC<VisionItemProps> = ({
         className="absolute top-0 left-3 right-3 h-1 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
         style={{ touchAction: 'none' }}
       />
+      </>
+      )}
 
     </div>
   );

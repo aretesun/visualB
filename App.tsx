@@ -53,6 +53,7 @@ const BACKGROUND_IMAGES = [
 const App: React.FC = () => {
   const [items, setItems] = useState<Card[]>([]);
   const [isLoadingShared, setIsLoadingShared] = useState(false);
+  const [isSharedView, setIsSharedView] = useState(false); // 공유 보기 모드
 
   const [backgroundImage, setBackgroundImage] = useState<string>('');
   const [nextId, setNextId] = useState<number>(() => {
@@ -89,6 +90,7 @@ const App: React.FC = () => {
               const data = await response.json();
               if (data.success && data.items) {
                 setItems(data.items);
+                setIsSharedView(true); // 공유 보기 모드 활성화
                 setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
                 // URL 파라미터 제거 (깔끔하게)
                 window.history.replaceState({}, '', window.location.pathname);
@@ -107,6 +109,7 @@ const App: React.FC = () => {
             const jsonData = decodeURIComponent(atob(legacyData));
             const sharedItems = JSON.parse(jsonData) as Card[];
             setItems(sharedItems);
+            setIsSharedView(true); // 공유 보기 모드 활성화
             setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
             window.history.replaceState({}, '', window.location.pathname);
             return;
@@ -147,6 +150,17 @@ const App: React.FC = () => {
   }, []); // 빈 배열: 마운트 시에만 실행
 
   useEffect(() => {
+    // 공유 보기 모드에서는 sessionStorage에 저장 (탭 닫으면 사라짐)
+    if (isSharedView) {
+      try {
+        sessionStorage.setItem('sharedBoardItems', JSON.stringify(items));
+      } catch (error) {
+        console.error("Failed to save to sessionStorage", error);
+      }
+      return;
+    }
+
+    // 일반 모드: localStorage에 저장 (영구)
     try {
       localStorage.setItem('visionBoardItems', JSON.stringify(items));
     } catch (error) {
@@ -155,7 +169,7 @@ const App: React.FC = () => {
         setToastMessage('저장 공간이 부족합니다. 일부 카드를 삭제하거나 URL로 이미지를 추가해주세요.');
       }
     }
-  }, [items]);
+  }, [items, isSharedView]);
 
   // 브라우저 창 크기 변경 시 카드 위치 자동 조정
   useEffect(() => {
@@ -495,6 +509,27 @@ const App: React.FC = () => {
     >
       <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
 
+      {/* 공유 보기 모드 알림 */}
+      {isSharedView && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-blue-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <span className="text-sm font-medium">공유된 비전보드 보기 (읽기 전용)</span>
+          <button
+            onClick={() => {
+              setIsSharedView(false);
+              setItems([]);
+              window.location.reload();
+            }}
+            className="ml-2 text-xs underline hover:text-white/80"
+          >
+            내 보드로 돌아가기
+          </button>
+        </div>
+      )}
+
       {items.map((item) => (
         <VisionItem
           key={item.id}
@@ -508,20 +543,26 @@ const App: React.FC = () => {
           onBringToFront={bringToFront}
           onRequestUrlInput={handleRequestUrlInput}
           isUrlModalOpen={urlInputItemId === item.id && showUrlModal}
+          isReadOnly={isSharedView}
         />
       ))}
 
       <Toolbar
         onRefreshBackground={refreshBackground}
         onShareClick={() => setShowShareModal(true)}
+        isSharedView={isSharedView}
       />
-      <AddCardButton onAddCard={addCard} />
+      {!isSharedView && (
+        <>
+          <AddCardButton onAddCard={addCard} />
+          <SettingsMenu
+            items={items}
+            onRestore={handleRestore}
+            onShowToast={setToastMessage}
+          />
+        </>
+      )}
       <LinksMenu />
-      <SettingsMenu
-        items={items}
-        onRestore={handleRestore}
-        onShowToast={setToastMessage}
-      />
       {toastMessage && (
         <Toast message={toastMessage} onClose={() => setToastMessage('')} />
       )}

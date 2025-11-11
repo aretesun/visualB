@@ -7,9 +7,10 @@ interface DraggableOptions {
   handleRef?: RefObject<HTMLElement>;
   initialPosition?: Position;
   onDragEnd?: (position: Position) => void;
+  disabled?: boolean; // 드래그 비활성화
 }
 
-export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 }, onDragEnd }: DraggableOptions) => {
+export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 }, onDragEnd, disabled = false }: DraggableOptions) => {
   const [position, setPosition] = useState<Position>(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const offsetRef = useRef<Position>({ x: 0, y: 0 });
@@ -27,6 +28,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
   }, [initialPosition.x, initialPosition.y, isDragging]);
 
   const onPointerDown = (e: PointerEvent) => {
+    if (disabled) return; // 비활성화 상태면 즉시 리턴
     if (e.button !== 0) return;
     const targetElement = e.target as HTMLElement;
     const dragHandle = handleRef?.current;
