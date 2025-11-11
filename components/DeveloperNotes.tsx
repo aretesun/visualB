@@ -32,6 +32,32 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
           {/* 최신 업데이트 */}
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center space-x-2 mb-3">
+              <span className="text-lg font-semibold">🚀 v1.4.0</span>
+              <span className="text-sm text-white/60">2025-11-11</span>
+            </div>
+            <ul className="space-y-2 text-sm text-white/80 ml-4">
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>짧은 링크 공유 기능 (Cloudflare Workers 연동)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>이미지 캡처 CORS 문제 완전 해결</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>공유 링크 3일 자동 만료 (용량 최적화)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>공유 모달 UI 개선</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* 이전 업데이트 */}
+          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <div className="flex items-center space-x-2 mb-3">
               <span className="text-lg font-semibold">✨ v1.3.0</span>
               <span className="text-sm text-white/60">2025-11-05</span>
             </div>
