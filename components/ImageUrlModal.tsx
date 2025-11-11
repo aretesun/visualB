@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ImageUrlModalProps {
   onSubmit: (url: string) => void;
@@ -6,6 +7,7 @@ interface ImageUrlModalProps {
 }
 
 const ImageUrlModal: React.FC<ImageUrlModalProps> = ({ onSubmit, onClose }) => {
+  const { t } = useLanguage();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +65,7 @@ const ImageUrlModal: React.FC<ImageUrlModalProps> = ({ onSubmit, onClose }) => {
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <h2 className="text-xl font-semibold text-white mb-4">이미지 URL 추가</h2>
+        <h2 className="text-xl font-semibold text-white mb-4">{t.urlModal.title}</h2>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -75,7 +77,7 @@ const ImageUrlModal: React.FC<ImageUrlModalProps> = ({ onSubmit, onClose }) => {
                 setUrl(e.target.value);
                 setError('');
               }}
-              placeholder="https://example.com/image.jpg"
+              placeholder={t.urlModal.placeholder}
               className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
             />
             {error && (
@@ -89,20 +91,20 @@ const ImageUrlModal: React.FC<ImageUrlModalProps> = ({ onSubmit, onClose }) => {
               onClick={onClose}
               className="px-4 py-2 text-white hover:bg-white/10 rounded-lg transition-colors"
             >
-              취소
+              {t.urlModal.cancel}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors"
             >
-              추가
+              {t.urlModal.add}
             </button>
           </div>
         </form>
 
         <div className="mt-4 pt-4 border-t border-white/10">
           <p className="text-xs text-white/60">
-            팁: Google AI Studio에서 생성한 이미지를 마우스 우클릭 {'>'} '이미지 주소 복사'로 URL을 가져올 수 있습니다.
+            {t.urlModal.tip}
           </p>
         </div>
       </div>

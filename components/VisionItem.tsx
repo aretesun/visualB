@@ -3,6 +3,7 @@ import type { Card, Position } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { TrashIcon, EditIcon, CheckIcon } from './Icons';
 import ImageSourceDropdown from './ImageSourceDropdown';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface VisionItemProps {
   item: Card;
@@ -31,6 +32,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
   isUrlModalOpen = false,
   isReadOnly = false
 }) => {
+  const { t } = useLanguage();
   const itemRef = useRef<HTMLDivElement>(null);
 
   const { position, isDragging } = useDraggable({
@@ -491,67 +493,111 @@ const VisionItem: React.FC<VisionItemProps> = ({
     const startY = e.clientY;
     const startCardWidth = cardWidth; // 현재 카드 너비
     const startImageHeight = item.imageHeight || 160; // 기본값 160px
+    const startImageWidth = item.imageWidth || 232; // 현재 이미지 너비
     const startPosX = position.x;
     const startPosY = position.y;
 
-    // 리사이즈 중 현재 위치와 크기를 추적
-    let currentPosX = startPosX;
-    let currentPosY = startPosY;
-    let currentCardWidth = startCardWidth;
-    let currentImageHeight = startImageHeight;
+    // 로컬 리사이즈 상태
+    let resizeState = {
+      cardWidth: startCardWidth,
+      imageWidth: startImageWidth,
+      imageHeight: startImageHeight,
+      posX: startPosX,
+      posY: startPosY,
+    };
+
+    // 실시간 DOM 업데이트를 위한 ref
+    const element = itemRef.current;
+    if (!element) return;
+
+    let rafId: number | null = null;
 
     const handlePointerMove = (e: PointerEvent) => {
       const deltaX = e.clientX - startX;
       const deltaY = e.clientY - startY;
 
-      let newCardWidth = currentCardWidth;
-      let newImageHeight = currentImageHeight;
-      let newPosX = currentPosX;
-      let newPosY = currentPosY;
+      let newCardWidth = resizeState.cardWidth;
+      let newImageHeight = resizeState.imageHeight;
+      let newPosX = resizeState.posX;
+      let newPosY = resizeState.posY;
 
       // 방향에 따라 크기 및 위치 조절
-      if (direction.includes('e')) { // 동쪽 (오른쪽 변)
-        // 오른쪽으로 드래그 → 너비 증가 (왼쪽 경계 고정)
+      if (direction.includes('e')) {
         newCardWidth = Math.max(200, Math.min(1000, startCardWidth + deltaX));
-        newPosX = startPosX; // 왼쪽 경계 고정
+        newPosX = startPosX;
       }
-      if (direction.includes('w')) { // 서쪽 (왼쪽 변)
-        // 왼쪽으로 드래그 → 너비 증가 (오른쪽 경계 고정)
+      if (direction.includes('w')) {
         const proposedWidth = startCardWidth - deltaX;
         newCardWidth = Math.max(200, Math.min(1000, proposedWidth));
-        // 오른쪽 경계를 고정하려면: 새 왼쪽 위치 = 시작 위치 + (시작 너비 - 새 너비)
         newPosX = startPosX + (startCardWidth - newCardWidth);
       }
-      if (direction.includes('s')) { // 남쪽 (아래 변)
-        // 아래로 드래그 → 높이 증가 (위쪽 경계 고정)
+      if (direction.includes('s')) {
         newImageHeight = Math.max(100, Math.min(800, startImageHeight + deltaY));
-        newPosY = startPosY; // 위쪽 경계 고정
+        newPosY = startPosY;
       }
-      if (direction.includes('n')) { // 북쪽 (위 변)
-        // 위로 드래그 → 높이 증가 (아래쪽 경계 고정)
+      if (direction.includes('n')) {
         const proposedHeight = startImageHeight - deltaY;
         newImageHeight = Math.max(100, Math.min(800, proposedHeight));
-        // 아래쪽 경계를 고정하려면: 새 위쪽 위치 = 시작 위치 + (시작 높이 - 새 높이)
         newPosY = startPosY + (startImageHeight - newImageHeight);
       }
 
-      // 현재 값 업데이트
-      currentCardWidth = newCardWidth;
-      currentImageHeight = newImageHeight;
-      currentPosX = newPosX;
-      currentPosY = newPosY;
-
-      // 이미지 너비는 카드 너비 - 패딩(24px)
       const newImageWidth = newCardWidth - 24;
 
-      onImageSizeChange(item.id, newImageWidth, newImageHeight);
-      onPositionChange(item.id, { x: newPosX, y: newPosY });
+      // 로컬 상태 업데이트
+      resizeState = {
+        cardWidth: newCardWidth,
+        imageWidth: newImageWidth,
+        imageHeight: newImageHeight,
+        posX: newPosX,
+        posY: newPosY,
+      };
+
+      // 이전 requestAnimationFrame 취소
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+
+      // requestAnimationFrame으로 DOM 업데이트 배치 처리
+      rafId = requestAnimationFrame(() => {
+        // 한 번에 모든 스타일 업데이트 (리플로우 최소화)
+        element.style.cssText = `
+          left: ${newPosX}px;
+          top: ${newPosY}px;
+          width: ${newCardWidth}px;
+          touch-action: none;
+          position: absolute;
+        `;
+
+        const imageElement = imageRef.current;
+        if (imageElement) {
+          imageElement.style.cssText = `
+            width: ${newImageWidth}px;
+            height: ${newImageHeight}px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.375rem;
+            transition: none;
+          `;
+        }
+
+        rafId = null;
+      });
     };
 
     const handlePointerUp = () => {
+      // 남아있는 RAF 취소
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+
       setIsResizing(false);
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
+
+      // 최종 상태를 React에 반영
+      onImageSizeChange(item.id, resizeState.imageWidth, resizeState.imageHeight);
+      onPositionChange(item.id, { x: resizeState.posX, y: resizeState.posY });
 
       // 리사이즈 완료 후 이미지 offset 보정
       if (item.imageUrl && imgElementRef.current && item.imageOffset) {
@@ -645,7 +691,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
               onChange={(e) => setEditText(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
-              placeholder="무엇을 원하세요?"
+              placeholder={t.card.placeholder}
               maxLength={300}
               className="w-full h-24 bg-transparent text-white placeholder-white/40 focus:outline-none resize-none"
             />
@@ -696,7 +742,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
           <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          <span className="text-sm">이미지 추가</span>
+          <span className="text-sm">{t.card.addImage}</span>
         </div>
       )}
 

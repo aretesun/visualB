@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { RefreshCwIcon, ShareIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ToolbarProps {
   onRefreshBackground: () => void;
@@ -9,10 +10,12 @@ interface ToolbarProps {
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, isSharedView = false }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="fixed top-4 left-1/2 -translate-x-1/2 p-2 bg-white/10 backdrop-blur-md rounded-full shadow-lg flex items-center space-x-2 z-10">
       <h1 className="text-white font-bold text-lg px-3 hidden sm:block">
-        {isSharedView ? '👀 공유된 보드' : 'Visual Board'}
+        {isSharedView ? `👀 ${t.toolbar.sharedTitle}` : t.toolbar.title}
       </h1>
       {!isSharedView && (
         <>

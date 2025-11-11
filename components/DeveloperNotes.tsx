@@ -1,10 +1,13 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface DeveloperNotesProps {
   onClose: () => void;
 }
 
 const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
+  const { t } = useLanguage();
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/50 backdrop-blur-sm">
       <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
@@ -14,7 +17,7 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <span>개발자 노트</span>
+            <span>{t.developerNotes.title}</span>
           </h2>
           <button
             onClick={onClose}
@@ -126,24 +129,24 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>주요 기능</span>
+              <span>{t.developerNotes.features}</span>
             </h3>
             <ul className="space-y-2 text-sm text-white/80 ml-4">
               <li className="flex items-start space-x-2">
                 <span className="mt-1">💡</span>
-                <span><strong>카드 이동:</strong> 카드를 드래그하여 자유롭게 배치</span>
+                <span>{t.developerNotes.cardMove}</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="mt-1">📐</span>
-                <span><strong>크기 조절:</strong> 카드 모서리/변을 드래그하여 크기 조절</span>
+                <span>{t.developerNotes.cardResize}</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="mt-1">🖼️</span>
-                <span><strong>이미지 조정:</strong> 자물쇠 아이콘 클릭 후 이미지 위치 조정</span>
+                <span>{t.developerNotes.imageAdjust}</span>
               </li>
               <li className="flex items-start space-x-2">
                 <span className="mt-1">🔄</span>
-                <span><strong>배경 변경:</strong> 좌측 상단 새로고침 버튼으로 배경 변경</span>
+                <span>{t.developerNotes.backgroundChange}</span>
               </li>
             </ul>
           </div>
@@ -157,13 +160,13 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
             rel="noopener noreferrer"
             className="flex items-center justify-center space-x-2 w-full py-3 px-4 bg-gradient-to-r from-yellow-500/80 to-orange-500/80 hover:from-yellow-500 hover:to-orange-500 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:scale-105"
           >
-            <span>☕ 커피 한 잔 사주기</span>
+            <span>{t.developerNotes.buyMeCoffee}</span>
           </a>
         </div>
 
         {/* 푸터 */}
         <div className="mt-6 pt-4 border-t border-white/10 text-center text-sm text-white/60">
-          Made with ❤️ by vision team
+          {t.developerNotes.madeWith}
         </div>
       </div>
     </div>

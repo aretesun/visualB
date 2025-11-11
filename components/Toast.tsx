@@ -22,10 +22,10 @@ const Toast: React.FC<ToastProps> = ({ message, onClose }) => {
 
   return (
     <div
-      className={`fixed top-20 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-xl text-white px-6 py-4 rounded-lg shadow-2xl border border-white/30 z-[100] transition-all duration-300 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+      className={`fixed top-1/2 left-1/2 bg-white/20 backdrop-blur-xl text-white px-6 py-4 rounded-lg shadow-2xl border border-white/30 z-[100] transition-all duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
       }`}
-      style={{ transform: `translate(-50%, ${isVisible ? '0' : '-0.5rem'})` }}
+      style={{ transform: `translate(-50%, -50%)` }}
     >
       <p className="text-center font-medium">{message}</p>
     </div>

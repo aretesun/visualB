@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ShareModalProps {
   onClose: () => void;
@@ -13,6 +14,8 @@ const ShareModal: React.FC<ShareModalProps> = ({
   onShareAsFile,
   onShareAsLink,
 }) => {
+  const { t } = useLanguage();
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose();
@@ -30,10 +33,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <h2 className="text-xl font-semibold text-white mb-4">공유하기</h2>
-        <p className="text-sm text-white/70 mb-6">
-          비전보드를 공유할 방법을 선택하세요
-        </p>
+        <h2 className="text-xl font-semibold text-white mb-4">{t.shareModal.title}</h2>
 
         <div className="flex flex-col space-y-3">
           {/* 이미지로 저장 */}
@@ -46,9 +46,9 @@ const ShareModal: React.FC<ShareModalProps> = ({
           >
             <div className="text-3xl">📸</div>
             <div className="flex-1">
-              <div className="text-white font-medium">이미지로 저장</div>
+              <div className="text-white font-medium">{t.shareModal.asImage}</div>
               <div className="text-sm text-white/60">
-                현재 화면을 이미지로 다운로드
+                {t.shareModal.asImageDesc}
               </div>
             </div>
             <svg
@@ -76,13 +76,10 @@ const ShareModal: React.FC<ShareModalProps> = ({
             <div className="text-3xl">💾</div>
             <div className="flex-1">
               <div className="text-white font-medium flex items-center gap-2">
-                파일로 공유
-                <span className="text-xs bg-white/10 px-2 py-0.5 rounded">
-                  준비중
-                </span>
+                {t.shareModal.asFile}
               </div>
               <div className="text-sm text-white/60">
-                편집 가능한 파일로 내보내기
+                {t.shareModal.asFileDesc}
               </div>
             </div>
             <svg
@@ -110,9 +107,9 @@ const ShareModal: React.FC<ShareModalProps> = ({
           >
             <div className="text-3xl">🔗</div>
             <div className="flex-1">
-              <div className="text-white font-medium">링크로 공유</div>
+              <div className="text-white font-medium">{t.shareModal.asLink}</div>
               <div className="text-sm text-white/60">
-                URL에 데이터를 담아 간편하게 공유
+                {t.shareModal.asLinkDesc}
               </div>
             </div>
             <svg
@@ -136,7 +133,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 text-white hover:bg-white/10 rounded-lg transition-colors"
           >
-            닫기
+            {t.button.close}
           </button>
         </div>
       </div>

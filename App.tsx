@@ -8,6 +8,7 @@ import Toast from './components/Toast';
 import SettingsMenu from './components/SettingsMenu';
 import ImageUrlModal from './components/ImageUrlModal';
 import ShareModal from './components/ShareModal';
+import { useLanguage } from './contexts/LanguageContext';
 
 const MAX_CARDS = 100;
 
@@ -49,6 +50,7 @@ const BACKGROUND_IMAGES = [
 ];
 
 const App: React.FC = () => {
+  const { t } = useLanguage();
   const [items, setItems] = useState<Card[]>([]);
   const [isLoadingShared, setIsLoadingShared] = useState(false);
   const [isSharedView, setIsSharedView] = useState(false); // 공유 보기 모드
@@ -95,7 +97,7 @@ const App: React.FC = () => {
 
                 setItems(data.items);
                 setIsSharedView(true); // 공유 보기 모드 활성화
-                setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
+                setToastMessage(t.toast.sharedBoardLoaded);
                 // URL 파라미터 제거 (깔끔하게)
                 window.history.replaceState({}, '', window.location.pathname);
                 return;
@@ -103,7 +105,7 @@ const App: React.FC = () => {
             }
           } catch (error) {
             console.error('Failed to load shared data from Worker:', error);
-            setToastMessage('⚠️ 공유된 비전보드를 불러오는데 실패했습니다');
+            setToastMessage(t.toast.sharedBoardFailed);
           } finally {
             setIsLoadingShared(false);
           }
@@ -120,7 +122,7 @@ const App: React.FC = () => {
             const sharedItems = JSON.parse(jsonData) as Card[];
             setItems(sharedItems);
             setIsSharedView(true); // 공유 보기 모드 활성화
-            setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
+            setToastMessage(t.toast.sharedBoardLoaded);
             window.history.replaceState({}, '', window.location.pathname);
             return;
           } catch (error) {
@@ -232,7 +234,7 @@ const App: React.FC = () => {
   // 빈 카드 생성
   const addCard = () => {
     if (items.length >= MAX_CARDS) {
-      setToastMessage('너무 꿈이 많아요. 오래된 기억은 지워주세요.');
+      setToastMessage(t.toast.maxCards);
       return;
     }
 
@@ -310,7 +312,7 @@ const App: React.FC = () => {
   // 공유 기능들
   const handleShareAsImage = async () => {
     try {
-      setToastMessage('이미지를 생성하는 중...');
+      setToastMessage(t.toast.imageGenerating);
 
       // html2canvas를 동적으로 로드
       const html2canvas = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
@@ -318,7 +320,7 @@ const App: React.FC = () => {
       // 현재 화면을 캡처할 대상 요소
       const element = document.querySelector('.relative.w-screen.h-screen') as HTMLElement;
       if (!element) {
-        setToastMessage('화면 캡처에 실패했습니다');
+        setToastMessage(t.toast.captureError);
         return;
       }
 
@@ -437,7 +439,7 @@ const App: React.FC = () => {
       // Canvas를 Blob으로 변환
       canvas.toBlob((blob) => {
         if (!blob) {
-          setToastMessage('이미지 생성에 실패했습니다');
+          setToastMessage(t.toast.imageFailed);
           return;
         }
 
@@ -452,11 +454,11 @@ const App: React.FC = () => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        setToastMessage('이미지가 다운로드되었습니다! 🎉');
+        setToastMessage(t.toast.imageDownloaded);
       }, 'image/png');
     } catch (error) {
       console.error('Image capture failed:', error);
-      setToastMessage('이미지 다운로드 중 오류가 발생했습니다');
+      setToastMessage(t.toast.imageFailed);
     }
   };
 
@@ -467,7 +469,7 @@ const App: React.FC = () => {
 
   const handleShareAsLink = async () => {
     try {
-      setToastMessage('🔗 링크 생성 중...');
+      setToastMessage(t.toast.linkGenerating);
 
       // Worker URL이 설정되어 있으면 새로운 방식 사용
       if (WORKER_URL) {
@@ -490,12 +492,12 @@ const App: React.FC = () => {
 
             await navigator.clipboard.writeText(shareUrl);
 
-            setToastMessage(`✨ 링크 복사 완료! (${shareUrl.length}자, 3일간 유효)`);
+            setToastMessage(t.toast.linkCopied);
             return;
           }
         } catch (workerError) {
           console.error('Worker share failed, falling back to legacy method:', workerError);
-          setToastMessage('⚠️ 서버 연결 실패, 로컬 방식으로 전환합니다...');
+          setToastMessage(t.toast.linkFailed);
           // 폴백: 기존 방식 계속 진행
         }
       }
@@ -506,14 +508,14 @@ const App: React.FC = () => {
       const shareUrl = `${window.location.origin}${window.location.pathname}?data=${base64Data}`;
 
       if (shareUrl.length > 2000) {
-        setToastMessage('⚠️ 카드가 너무 많아 링크가 너무 깁니다. Worker를 설정하면 해결됩니다.');
+        setToastMessage(t.toast.linkFailed);
       }
 
       await navigator.clipboard.writeText(shareUrl);
-      setToastMessage(`🔗 링크 복사 완료! (${shareUrl.length}자)`);
+      setToastMessage(t.toast.linkCopied);
     } catch (error) {
       console.error('Link share failed:', error);
-      setToastMessage('❌ 링크 생성 중 오류가 발생했습니다');
+      setToastMessage(t.toast.linkFailed);
     }
   };
 
@@ -531,8 +533,9 @@ const App: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
-          <span className="text-sm font-medium">공유된 비전보드 보기 (위치 조정 가능, 저장 안 됨)</span>
-          <button
+          <span className="text-sm font-medium">{t.sharedView.notice}</span>
+          {/* TODO: 백업/복원 로직 수정 필요 - 초기화 문제 해결 후 활성화 */}
+          {/* <button
             onClick={() => {
               // 백업된 localStorage 복원
               const backup = sessionStorage.getItem('backupLocalData');
@@ -550,7 +553,7 @@ const App: React.FC = () => {
             className="ml-2 text-xs underline hover:text-white/80"
           >
             내 보드로 돌아가기
-          </button>
+          </button> */}
         </div>
       )}
 
