@@ -37,9 +37,10 @@ const VisionItem: React.FC<VisionItemProps> = ({
     ref: itemRef,
     initialPosition: item.position,
     onDragEnd: (newPosition) => {
+      // 읽기 전용 모드에서도 임시로 위치 변경 허용 (저장은 안 됨)
       onPositionChange(item.id, newPosition);
     },
-    disabled: isReadOnly, // 읽기 전용 모드에서 드래그 비활성화
+    disabled: false, // 드래그 항상 허용
   });
 
   const [isEditingText, setIsEditingText] = useState(!item.text && !item.imageUrl);
@@ -823,8 +824,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
       </div>
       )}
 
-      {/* 리사이즈 핸들 - 모든 모서리와 변 (윈도우 스타일) (읽기 전용 모드에서 숨김) */}
-      {!isReadOnly && (
+      {/* 리사이즈 핸들 - 모든 모서리와 변 (윈도우 스타일) */}
       <>
       {/* 모서리 */}
       {/* 우하단 */}
@@ -918,7 +918,6 @@ const VisionItem: React.FC<VisionItemProps> = ({
         style={{ touchAction: 'none' }}
       />
       </>
-      )}
 
     </div>
   );
