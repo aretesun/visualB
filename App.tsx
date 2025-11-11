@@ -87,6 +87,12 @@ const App: React.FC = () => {
             if (response.ok) {
               const data = await response.json();
               if (data.success && data.items) {
+                // 공유 모드 진입 전 현재 localStorage 백업 (덮어쓰기 방지)
+                const currentLocal = localStorage.getItem('visionBoardItems');
+                if (currentLocal) {
+                  sessionStorage.setItem('backupLocalData', currentLocal);
+                }
+
                 setItems(data.items);
                 setIsSharedView(true); // 공유 보기 모드 활성화
                 setToastMessage('🎉 공유된 비전보드를 불러왔습니다!');
@@ -104,6 +110,12 @@ const App: React.FC = () => {
         } else if (legacyData) {
           // 기존 base64 방식 (호환성 유지)
           try {
+            // 공유 모드 진입 전 현재 localStorage 백업
+            const currentLocal = localStorage.getItem('visionBoardItems');
+            if (currentLocal) {
+              sessionStorage.setItem('backupLocalData', currentLocal);
+            }
+
             const jsonData = decodeURIComponent(atob(legacyData));
             const sharedItems = JSON.parse(jsonData) as Card[];
             setItems(sharedItems);
@@ -522,9 +534,17 @@ const App: React.FC = () => {
           <span className="text-sm font-medium">공유된 비전보드 보기 (위치 조정 가능, 저장 안 됨)</span>
           <button
             onClick={() => {
+              // 백업된 localStorage 복원
+              const backup = sessionStorage.getItem('backupLocalData');
+              if (backup) {
+                localStorage.setItem('visionBoardItems', backup);
+              }
+
               // sessionStorage 삭제
               sessionStorage.removeItem('sharedBoardItems');
-              // 페이지 새로고침하면 localStorage에서 자동으로 로드됨
+              sessionStorage.removeItem('backupLocalData');
+
+              // 페이지 새로고침하면 복원된 localStorage에서 로드됨
               window.location.reload();
             }}
             className="ml-2 text-xs underline hover:text-white/80"
