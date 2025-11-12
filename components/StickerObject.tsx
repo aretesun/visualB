@@ -66,6 +66,11 @@ const StickerObject: React.FC<StickerObjectProps> = ({
     if (!element) return;
 
     let rafId: number | null = null;
+    // 최종 크기 및 위치 저장 (getBoundingClientRect 대신 사용)
+    let finalWidth = startWidth;
+    let finalHeight = startHeight;
+    let finalPosX = startPosX;
+    let finalPosY = startPosY;
 
     const handlePointerMove = (e: PointerEvent) => {
       const deltaX = e.clientX - startX;
@@ -114,6 +119,12 @@ const StickerObject: React.FC<StickerObjectProps> = ({
         newHeight = newWidth / aspectRatio;
       }
 
+      // 최종 값 저장
+      finalWidth = newWidth;
+      finalHeight = newHeight;
+      finalPosX = newPosX;
+      finalPosY = newPosY;
+
       // 이전 RAF 취소
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
@@ -142,19 +153,15 @@ const StickerObject: React.FC<StickerObjectProps> = ({
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
 
-      // 최종 상태 반영
-      const finalRect = element.getBoundingClientRect();
-      const containerRect = element.parentElement?.getBoundingClientRect();
-      if (containerRect) {
-        onSizeChange(sticker.id, {
-          width: finalRect.width,
-          height: finalRect.height,
-        });
-        onPositionChange(sticker.id, {
-          x: finalRect.left - containerRect.left,
-          y: finalRect.top - containerRect.top,
-        });
-      }
+      // 계산된 최종 값 사용 (getBoundingClientRect 대신)
+      onSizeChange(sticker.id, {
+        width: finalWidth,
+        height: finalHeight,
+      });
+      onPositionChange(sticker.id, {
+        x: finalPosX,
+        y: finalPosY,
+      });
     };
 
     document.addEventListener('pointermove', handlePointerMove);
@@ -174,6 +181,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
       data-object="sticker"
       onFocus={handleFocus}
       onMouseDown={(e) => {
+        e.stopPropagation(); // 캔버스 선택 박스 방지
         handleFocus();
         handleClick(e);
       }}

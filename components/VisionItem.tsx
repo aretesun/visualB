@@ -683,6 +683,7 @@ const VisionItem: React.FC<VisionItemProps> = ({
       data-object="card"
       onFocus={handleFocus}
       onMouseDown={(e) => {
+        e.stopPropagation(); // 캔버스 선택 박스 방지
         handleFocus(e);
         handleClick(e);
       }}

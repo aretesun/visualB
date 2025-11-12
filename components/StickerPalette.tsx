@@ -78,7 +78,7 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
         <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-30">
           <div className="h-full flex flex-col">
             {/* 헤더 */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20">
+            <div className="flex items-center justify-between p-4 border-b border-white/20 select-none">
               <h3 className="text-white font-semibold flex items-center space-x-2">
                 <span className="text-xl">🎨</span>
                 <span>{t.stickerPalette?.title || 'Stickers'}</span>
@@ -106,8 +106,11 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
                   {stickers.map((sticker) => (
                     <div
                       key={sticker.id}
-                      className="relative group bg-white/5 hover:bg-white/10 rounded-lg p-2 cursor-move transition-colors"
-                      onMouseDown={(e) => onDragStart(sticker, e)}
+                      className="relative group bg-white/5 hover:bg-white/10 rounded-lg p-2 cursor-move transition-colors select-none"
+                      onMouseDown={(e) => {
+                        e.stopPropagation(); // 캔버스 선택 박스 방지
+                        onDragStart(sticker, e);
+                      }}
                     >
                       <div className="aspect-square flex items-center justify-center mb-1">
                         <img
@@ -118,7 +121,7 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
                         />
                       </div>
                       {sticker.name && (
-                        <p className="text-xs text-white text-center truncate">
+                        <p className="text-xs text-white text-center truncate select-none">
                           {sticker.name}
                         </p>
                       )}

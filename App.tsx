@@ -1079,7 +1079,10 @@ const App: React.FC = () => {
       ))}
 
       {/* 선택 박스 */}
-      {isSelecting && selectionStart && selectionEnd && (
+      {isSelecting && selectionStart && selectionEnd &&
+        // 최소 5px 이상 드래그했을 때만 표시 (의도하지 않은 선택 박스 방지)
+        (Math.abs(selectionEnd.x - selectionStart.x) > 5 ||
+         Math.abs(selectionEnd.y - selectionStart.y) > 5) && (
         <div
           className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none"
           style={{
