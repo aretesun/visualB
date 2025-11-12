@@ -25,7 +25,7 @@ const ShareModal: React.FC<ShareModalProps> = ({
   return (
     <div
       className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      style={{ zIndex: 10000 }}
+      style={{ zIndex: 60 }}
       onClick={onClose}
     >
       <div

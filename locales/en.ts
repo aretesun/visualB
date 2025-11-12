@@ -103,4 +103,20 @@ export const en: Translations = {
     buyMeCoffee: "☕ Buy Me a Coffee",
     madeWith: "Made with ❤️ by vision team",
   },
+
+  // Sticker Palette
+  stickerPalette: {
+    title: "Stickers",
+    open: "Open sticker palette",
+    empty: "No stickers yet",
+    addHint: "Click + to add stickers",
+    add: "Add Sticker",
+    addTitle: "Add Sticker",
+    addButton: "Add",
+    nameLabel: "Name (optional)",
+    namePlaceholder: "Sticker name",
+    urlLabel: "Image URL",
+    fileLabel: "Or upload file",
+    chooseFile: "Choose File",
+  },
 };

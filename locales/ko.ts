@@ -101,6 +101,22 @@ export const ko = {
     buyMeCoffee: "☕ 커피 한 잔 사주기",
     madeWith: "Made with ❤️ by vision team",
   },
+
+  // 스티커 팔레트
+  stickerPalette: {
+    title: "스티커",
+    open: "스티커 팔레트 열기",
+    empty: "아직 스티커가 없습니다",
+    addHint: "+ 버튼을 눌러 추가하세요",
+    add: "스티커 추가",
+    addTitle: "스티커 추가",
+    addButton: "추가",
+    nameLabel: "이름 (선택사항)",
+    namePlaceholder: "스티커 이름",
+    urlLabel: "이미지 URL",
+    fileLabel: "또는 파일 업로드",
+    chooseFile: "파일 선택",
+  },
 };
 
 export type Translations = typeof ko;

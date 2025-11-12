@@ -13,7 +13,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, is
   const { t } = useLanguage();
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 p-2 bg-white/10 backdrop-blur-md rounded-full shadow-lg flex items-center space-x-2 z-10">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 p-2 bg-white/10 backdrop-blur-md rounded-full shadow-lg flex items-center space-x-2 z-20">
       <h1 className="text-white font-bold text-lg px-3 hidden sm:block">
         {isSharedView ? `👀 ${t.toolbar.sharedTitle}` : t.toolbar.title}
       </h1>

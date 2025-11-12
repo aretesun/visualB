@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이미지 이동 제약 데모 (상하좌우)</title>
+    <!-- Tailwind CSS 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 사용자 드래그 선택 방지 */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        /* 이미지 기본 드래그 방지 */
+        #pannable-image {
+            pointer-events: none;
+        }
+        /* 뷰포트 커서 스타일 */
+        .viewport-container {
+            cursor: grab;
+        }
+        .viewport-container:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen font-sans no-select">
+
+    <div class="w-full max-w-4xl p-4">
+        <h1 class="text-3xl font-bold text-center mb-2">이미지 이동 제약 데모</h1>
+        <p class="text-center text-gray-400 mb-4">
+            아래 이미지를 마우스로 클릭한 채 상하좌우로 드래그해 보세요. <br/>
+            이미지 끝에 도달하면 더 이상 빈 공간이 생기지 않도록 이동이 멈춥니다.
+        </p>
+        
+        <!-- 
+          '뷰포트' 컨테이너입니다.
+          이 영역이 '프레임' 역할을 하며, overflow-hidden으로 이 밖의 것은 숨깁니다.
+        -->
+        <div id="viewport" class="viewport-container w-full max-w-3xl aspect-video bg-black border-4 border-blue-500 rounded-lg overflow-hidden relative mx-auto shadow-lg">
+            
+            <!-- 
+              이동할 이미지입니다.
+              뷰포트보다 의도적으로 더 크게 설정합니다. (너비 150%, 높이 150%)
+            -->
+            <img id="pannable-image" 
+                 src="https://ideogram.ai/assets/progressive-image/balanced/response/uKPfhmA0QH6qsXLlF5G92Q" 
+                 onerror="this.onerror=null; this.src='https://placehold.co/1500x1266/333/fff?text=Image+Load+Error';"
+                 alt="미래 도시 풍경"
+                 class="absolute top-0 left-0 h-[150%] w-[150%] max-w-none object-cover">
+        </div>
+
+        <div class="text-center mt-4">
+            <p id="debug-info" class="text-gray-500 text-sm h-12"></p> <!-- 높이 증가 -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const viewport = document.getElementById('viewport');
+            const image = document.getElementById('pannable-image');
+            const debugInfo = document.getElementById('debug-info');
+
+            if (!viewport || !image) {
+                console.error("필수 요소를 찾을 수 없습니다.");
+                return;
+            }
+
+            let isDragging = false;
+            let startX, startY;         // 드래그 시작 시 마우스의 X, Y 위치
+            let startImgLeft, startImgTop; // 드래그 시작 시 이미지의 left, top 값
+            
+            // 이미지 로딩 완료 후 로직 실행 (정확한 크기 계산을 위해)
+            const imageElement = new Image();
+            imageElement.src = image.src;
+            imageElement.onload = () => {
+                
+                // 뷰포트 및 이미지 크기 가져오기
+                const viewportWidth = viewport.clientWidth;
+                const imageWidth = image.scrollWidth; // 실제 렌더링된 이미지 너비
+                const viewportHeight = viewport.clientHeight;
+                const imageHeight = image.scrollHeight; // 실제 렌더링된 이미지 높이
+                
+                // --- 핵심 제약 로직: X축(좌우) 경계 설정 ---
+                const minLeft = viewportWidth - imageWidth;
+                const maxLeft = 0;
+                
+                // --- 핵심 제약 로직: Y축(상하) 경계 설정 ---
+                const minTop = viewportHeight - imageHeight;
+                const maxTop = 0;
+                
+                // console.log(`Viewport: ${viewportWidth}x${viewportHeight}, Image: ${imageWidth}x${imageHeight}`);
+                // console.log(`X-Range: [${minLeft}, ${maxLeft}], Y-Range: [${minTop}, ${maxTop}]`);
+                
+                // 이미지의 초기 위치를 중앙으로 설정
+                image.style.left = (minLeft / 2) + 'px';
+                image.style.top = (minTop / 2) + 'px';
+
+                // --- 이벤트 리스너 ---
+
+                const dragStart = (e) => {
+                    isDragging = true;
+                    startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+                    startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                    startImgLeft = image.offsetLeft;
+                    startImgTop = image.offsetTop;
+                    viewport.classList.add('grabbing');
+                };
+
+                const dragMove = (e) => {
+                    if (!isDragging) return;
+                    
+                    const currentX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+                    const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                    
+                    const deltaX = currentX - startX;
+                    const deltaY = currentY - startY;
+                    
+                    // 1. 새로운 이미지 위치 계산
+                    let newLeft = startImgLeft + deltaX;
+                    let newTop = startImgTop + deltaY;
+
+                    // --- 2. 핵심 제약 조건 적용 (X축, Y축) ---
+                    newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
+                    newTop = Math.max(minTop, Math.min(newTop, maxTop));
+                    
+                    // 3. 이미지 위치 업데이트
+                    image.style.left = newLeft + 'px';
+                    image.style.top = newTop + 'px';
+                    
+                    // 디버그 정보 표시
+                    if(debugInfo) {
+                        debugInfo.innerHTML = `Image Left: ${Math.round(newLeft)}px (Min: ${minLeft}px, Max: ${maxLeft}px) <br>
+                                             Image Top: ${Math.round(newTop)}px (Min: ${minTop}px, Max: ${maxTop}px)`;
+                    }
+                };
+
+                const dragEnd = () => {
+                    isDragging = false;
+                    viewport.classList.remove('grabbing');
+                    if(debugInfo) {
+                        debugInfo.innerHTML = ''; // 정보 숨김
+                    }
+                };
+
+                // 데스크탑 이벤트
+                viewport.addEventListener('mousedown', dragStart);
+                window.addEventListener('mousemove', dragMove);
+                window.addEventListener('mouseup', dragEnd);
+                window.addEventListener('mouseleave', dragEnd);
+
+                // 모바일 터치 이벤트
+                viewport.addEventListener('touchstart', dragStart, { passive: true });
+                window.addEventListener('touchmove', dragMove, { passive: true });
+                window.addEventListener('touchend', dragEnd);
+                window.addEventListener('touchcancel', dragEnd);
+            };
+
+            imageElement.onerror = () => {
+                console.error("이미지 로딩에 실패했습니다.");
+                image.src = 'https://placehold.co/1500x1266/333/fff?text=Image+Load+Error';
+            };
+        });
+    </script>
+</body>
+</html>

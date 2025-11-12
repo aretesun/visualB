@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 interface VisionItemProps {
   item: Card;
-  onPositionChange: (id: number, position: Position) => void;
+  onPositionChange: (id: number, position: Position, delta?: Position) => void;
   onTextChange: (id: number, text: string) => void;
   onImageChange: (id: number, imageUrl: string) => void;
   onImageSizeChange: (id: number, width: number, height: number) => void;
@@ -17,6 +17,8 @@ interface VisionItemProps {
   onRequestUrlInput: (id: number) => void;
   isUrlModalOpen?: boolean;
   isReadOnly?: boolean; // 읽기 전용 모드
+  isSelected?: boolean; // 선택 여부
+  onSelect?: (id: number, isCtrlPressed: boolean) => void; // 선택 핸들러
 }
 
 const VisionItem: React.FC<VisionItemProps> = ({
@@ -30,7 +32,9 @@ const VisionItem: React.FC<VisionItemProps> = ({
   onBringToFront,
   onRequestUrlInput,
   isUrlModalOpen = false,
-  isReadOnly = false
+  isReadOnly = false,
+  isSelected = false,
+  onSelect
 }) => {
   const { t } = useLanguage();
   const itemRef = useRef<HTMLDivElement>(null);
@@ -38,8 +42,14 @@ const VisionItem: React.FC<VisionItemProps> = ({
   const { position, isDragging } = useDraggable({
     ref: itemRef,
     initialPosition: item.position,
-    onDragEnd: (newPosition) => {
-      // 읽기 전용 모드에서도 임시로 위치 변경 허용 (저장은 안 됨)
+    onDragMove: (newPosition, delta) => {
+      // 드래그 중 실시간으로 다른 선택된 카드들도 함께 이동
+      if (onPositionChange) {
+        onPositionChange(item.id, newPosition, delta);
+      }
+    },
+    onDragEnd: (newPosition, delta) => {
+      // 드래그 종료 시 최종 위치 업데이트 (delta 없이 호출하여 초기화)
       onPositionChange(item.id, newPosition);
     },
     disabled: false, // 드래그 항상 허용
@@ -660,19 +670,30 @@ const VisionItem: React.FC<VisionItemProps> = ({
     ? (item.imageWidth || 232) + 24
     : 256;
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (onSelect) {
+      const isCtrlPressed = e.ctrlKey || e.metaKey;
+      onSelect(item.id, isCtrlPressed);
+    }
+  };
+
   return (
     <div
       ref={itemRef}
+      data-object="card"
       onFocus={handleFocus}
-      onMouseDown={handleFocus}
+      onMouseDown={(e) => {
+        handleFocus(e);
+        handleClick(e);
+      }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border border-white/20 p-3 ${
+      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border p-3 ${
         isDragging ? 'shadow-black/50 scale-105 z-50' : 'shadow-black/30'
       } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${
         isResizing ? 'cursor-nwse-resize' : ''
-      }`}
+      } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : 'border-white/20'}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,

@@ -68,7 +68,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
   };
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-6 left-6 z-40">
       {/* 설정 이모지 버튼 */}
       <button
         onClick={() => setIsOpen(!isOpen)}
