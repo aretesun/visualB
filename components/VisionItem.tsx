@@ -991,4 +991,42 @@ const VisionItem: React.FC<VisionItemProps> = ({
   );
 };
 
-export default VisionItem;
+// React.memo로 최적화: props가 변경되지 않으면 리렌더링하지 않음
+export default React.memo(VisionItem, (prev, next) => {
+  // id가 다르면 다른 카드
+  if (prev.item.id !== next.item.id) return false;
+
+  // 위치가 바뀌면 리렌더링
+  if (
+    prev.item.position.x !== next.item.position.x ||
+    prev.item.position.y !== next.item.position.y
+  ) {
+    return false;
+  }
+
+  // 텍스트가 바뀌면 리렌더링
+  if (prev.item.text !== next.item.text) return false;
+
+  // 이미지가 바뀌면 리렌더링
+  if (prev.item.imageUrl !== next.item.imageUrl) return false;
+  if (prev.item.imageWidth !== next.item.imageWidth) return false;
+  if (prev.item.imageHeight !== next.item.imageHeight) return false;
+  if (
+    prev.item.imageOffset?.x !== next.item.imageOffset?.x ||
+    prev.item.imageOffset?.y !== next.item.imageOffset?.y
+  ) {
+    return false;
+  }
+
+  // 선택 상태가 바뀌면 리렌더링
+  if (prev.isSelected !== next.isSelected) return false;
+
+  // 읽기 전용 모드가 바뀌면 리렌더링
+  if (prev.isReadOnly !== next.isReadOnly) return false;
+
+  // URL 모달 상태가 바뀌면 리렌더링
+  if (prev.isUrlModalOpen !== next.isUrlModalOpen) return false;
+
+  // 그 외에는 리렌더링 방지 (성능 최적화)
+  return true;
+});
