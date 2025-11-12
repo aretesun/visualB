@@ -267,4 +267,39 @@ const StickerObject: React.FC<StickerObjectProps> = ({
   );
 };
 
-export default StickerObject;
+// React.memo로 최적화: props가 변경되지 않으면 리렌더링하지 않음
+export default React.memo(StickerObject, (prev, next) => {
+  // id가 다르면 다른 스티커
+  if (prev.sticker.id !== next.sticker.id) return false;
+
+  // 위치가 바뀌면 리렌더링
+  if (
+    prev.sticker.position.x !== next.sticker.position.x ||
+    prev.sticker.position.y !== next.sticker.position.y
+  ) {
+    return false;
+  }
+
+  // 크기가 바뀌면 리렌더링
+  if (
+    prev.sticker.size.width !== next.sticker.size.width ||
+    prev.sticker.size.height !== next.sticker.size.height
+  ) {
+    return false;
+  }
+
+  // z-index가 바뀌면 리렌더링
+  if (prev.sticker.zIndex !== next.sticker.zIndex) return false;
+
+  // 이미지 URL이 바뀌면 리렌더링
+  if (prev.sticker.imageUrl !== next.sticker.imageUrl) return false;
+
+  // 선택 상태가 바뀌면 리렌더링
+  if (prev.isSelected !== next.isSelected) return false;
+
+  // 읽기 전용 모드가 바뀌면 리렌더링
+  if (prev.isReadOnly !== next.isReadOnly) return false;
+
+  // 그 외에는 리렌더링 방지 (성능 최적화)
+  return true;
+});
