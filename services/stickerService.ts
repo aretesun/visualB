@@ -128,15 +128,11 @@ export class StickerService {
     instance: StickerInstance,
     newSize: Size
   ): StickerInstance {
-    // 최소 크기 제한
-    const minSize = 20;
-    const maxSize = 500;
-
     return {
       ...instance,
       size: {
-        width: Math.max(minSize, Math.min(newSize.width, maxSize)),
-        height: Math.max(minSize, Math.min(newSize.height, maxSize)),
+        width: Math.max(CONSTANTS.STICKER_MIN_SIZE, Math.min(newSize.width, CONSTANTS.STICKER_MAX_SIZE)),
+        height: Math.max(CONSTANTS.STICKER_MIN_SIZE, Math.min(newSize.height, CONSTANTS.STICKER_MAX_SIZE)),
       },
     };
   }

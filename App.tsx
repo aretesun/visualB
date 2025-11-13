@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef } from 'react';
-import { Card, Position, Sticker, StickerInstance, Size } from './types';
+import { Card, Position, Sticker, StickerInstance, Size, LegacyCard } from './types';
 import CardComponent from './components/Card';
 import Toolbar from './components/Toolbar';
 import AddCardButton from './components/AddCardButton';
@@ -85,6 +85,64 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        // 0. 이전 버전 데이터 마이그레이션 (한 번만 실행)
+        const oldCards = localStorage.getItem('visionBoardItems');
+        const newCards = localStorage.getItem('canvas-storage');
+
+        // 새 키에 데이터가 없고, 이전 키에 데이터가 있으면 마이그레이션
+        if (!newCards && oldCards) {
+          try {
+            const parsedOldCards: LegacyCard[] = JSON.parse(oldCards);
+            // 기존 데이터 마이그레이션 (type 필드 제거)
+            const migratedCards: Card[] = parsedOldCards.map((item) => {
+              if (item.type === 'text') {
+                return { id: item.id, position: item.position, text: item.text };
+              } else if (item.type === 'image') {
+                return { id: item.id, position: item.position, imageUrl: item.url || item.imageUrl };
+              }
+              // 이미 새 형식인 경우
+              return {
+                id: item.id,
+                position: item.position,
+                text: item.text,
+                imageUrl: item.imageUrl,
+                imageWidth: item.imageWidth,
+                imageHeight: item.imageHeight,
+                imageOffset: item.imageOffset,
+              };
+            });
+            setCards(migratedCards);
+            console.log('✅ 카드 데이터 마이그레이션 완료:', migratedCards.length, '개');
+          } catch (e) {
+            console.error('카드 마이그레이션 실패:', e);
+          }
+        }
+
+        // 스티커 마이그레이션
+        const oldStickers = localStorage.getItem('stickerPalette');
+        const oldStickerInstances = localStorage.getItem('stickerInstances');
+        const newStickers = localStorage.getItem('sticker-storage');
+
+        if (!newStickers && oldStickers) {
+          try {
+            const parsedOldStickers = JSON.parse(oldStickers);
+            setStickers(parsedOldStickers);
+            console.log('✅ 스티커 팔레트 마이그레이션 완료:', parsedOldStickers.length, '개');
+          } catch (e) {
+            console.error('스티커 마이그레이션 실패:', e);
+          }
+        }
+
+        if (!newStickers && oldStickerInstances) {
+          try {
+            const parsedOldInstances = JSON.parse(oldStickerInstances);
+            setInstances(parsedOldInstances);
+            console.log('✅ 스티커 인스턴스 마이그레이션 완료:', parsedOldInstances.length, '개');
+          } catch (e) {
+            console.error('스티커 인스턴스 마이그레이션 실패:', e);
+          }
+        }
+
         // 1. URL 파라미터에서 공유된 ID 체크
         const urlParams = new URLSearchParams(window.location.search);
         const shareId = urlParams.get('id');

@@ -21,6 +21,27 @@ export interface Card {
 // 레거시 타입 호환성을 위한 별칭
 export type VisionItem = Card;
 
+/**
+ * 레거시 카드 인터페이스 (마이그레이션용)
+ * 이전 버전에서 사용하던 type 필드를 포함
+ */
+export interface LegacyCard {
+  id: number;
+  type?: 'text' | 'image';
+  position: Position;
+  text?: string;
+  url?: string; // 구버전에서는 imageUrl 대신 url 사용
+  imageUrl?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageOffset?: Position;
+}
+
+/**
+ * 리사이즈 핸들 방향 타입
+ */
+export type ResizeHandle = 'se' | 'ne' | 'sw' | 'nw' | 'e' | 'w' | 's' | 'n';
+
 // 스티커 팔레트 관련 타입
 export interface Sticker {
   id: string;

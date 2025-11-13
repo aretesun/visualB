@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Card as CardType, Position } from '../../types';
+import type { Card as CardType, Position, ResizeHandle } from '../../types';
+import { CONSTANTS } from '../../utils/constants';
 import { useDraggable } from '../../hooks/useDraggable';
 import ImageSourceDropdown from '../ImageSourceDropdown';
 import CardText from './CardText';
@@ -244,7 +245,7 @@ const Card: React.FC<CardProps> = ({
   };
 
   // 카드 리사이즈 핸들러
-  const handleResizeStart = (e: React.MouseEvent | React.PointerEvent, direction: string) => {
+  const handleResizeStart = (e: React.MouseEvent | React.PointerEvent, direction: ResizeHandle) => {
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
@@ -281,21 +282,21 @@ const Card: React.FC<CardProps> = ({
       let newPosY = resizeState.posY;
 
       if (direction.includes('e')) {
-        newCardWidth = Math.max(200, Math.min(1000, startCardWidth + deltaX));
+        newCardWidth = Math.max(CONSTANTS.CARD_RESIZE_MIN_WIDTH, Math.min(CONSTANTS.CARD_RESIZE_MAX_WIDTH, startCardWidth + deltaX));
         newPosX = startPosX;
       }
       if (direction.includes('w')) {
         const proposedWidth = startCardWidth - deltaX;
-        newCardWidth = Math.max(200, Math.min(1000, proposedWidth));
+        newCardWidth = Math.max(CONSTANTS.CARD_RESIZE_MIN_WIDTH, Math.min(CONSTANTS.CARD_RESIZE_MAX_WIDTH, proposedWidth));
         newPosX = startPosX + (startCardWidth - newCardWidth);
       }
       if (direction.includes('s')) {
-        newImageHeight = Math.max(100, Math.min(800, startImageHeight + deltaY));
+        newImageHeight = Math.max(CONSTANTS.CARD_RESIZE_MIN_HEIGHT, Math.min(CONSTANTS.CARD_RESIZE_MAX_HEIGHT, startImageHeight + deltaY));
         newPosY = startPosY;
       }
       if (direction.includes('n')) {
         const proposedHeight = startImageHeight - deltaY;
-        newImageHeight = Math.max(100, Math.min(800, proposedHeight));
+        newImageHeight = Math.max(CONSTANTS.CARD_RESIZE_MIN_HEIGHT, Math.min(CONSTANTS.CARD_RESIZE_MAX_HEIGHT, proposedHeight));
         newPosY = startPosY + (startImageHeight - newImageHeight);
       }
 
@@ -453,7 +454,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'se');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.SOUTH_EAST);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -463,7 +464,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'ne');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.NORTH_EAST);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -473,7 +474,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'sw');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.SOUTH_WEST);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -483,7 +484,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'nw');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.NORTH_WEST);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -495,7 +496,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'e');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.EAST);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute top-3 right-0 bottom-3 w-1 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -505,7 +506,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'w');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.WEST);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute top-3 left-0 bottom-3 w-1 cursor-ew-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -515,7 +516,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 's');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.SOUTH);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute bottom-0 left-3 right-3 h-1 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"
@@ -525,7 +526,7 @@ const Card: React.FC<CardProps> = ({
           data-resize-handle
           onPointerDown={(e) => {
             e.stopPropagation();
-            handleResizeStart(e as any, 'n');
+            handleResizeStart(e, CONSTANTS.RESIZE_HANDLES.NORTH);
           }}
           onClick={(e) => e.stopPropagation()}
           className="absolute top-0 left-3 right-3 h-1 cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity z-10"

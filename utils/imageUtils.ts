@@ -107,7 +107,7 @@ export class ImageUtils {
         img.onload = () => resolve();
         img.onerror = () => reject(new Error('Failed to load image'));
         // 타임아웃 설정 (3초)
-        setTimeout(() => reject(new Error('Image load timeout')), 3000);
+        setTimeout(() => reject(new Error('Image load timeout')), CONSTANTS.IMAGE_LOAD_TIMEOUT_MS);
       }
     });
   }
