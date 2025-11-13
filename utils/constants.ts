@@ -5,15 +5,24 @@ export const CONSTANTS = {
   DEFAULT_CARD_HEIGHT: 200,
   MIN_CARD_WIDTH: 150,
   MIN_CARD_HEIGHT: 100,
+  MIN_CARD_MARGIN: 100,
+  CARD_RESIZE_MIN_WIDTH: 200,
+  CARD_RESIZE_MAX_WIDTH: 1000,
+  CARD_RESIZE_MIN_HEIGHT: 100,
+  CARD_RESIZE_MAX_HEIGHT: 800,
 
   // 이미지 관련
   IMAGE_COMPRESS_QUALITY: 0.7,
   IMAGE_MAX_WIDTH: 800,
   IMAGE_MAX_HEIGHT: 800,
+  IMAGE_LOAD_TIMEOUT_MS: 3000,
+  MAX_URL_LENGTH: 2000,
 
   // 스티커 관련
   MAX_STICKERS: 50,
   DEFAULT_STICKER_SIZE: 100,
+  STICKER_MIN_SIZE: 20,
+  STICKER_MAX_SIZE: 500,
 
   // UI 타이밍
   DEBOUNCE_MS: 100,
@@ -22,6 +31,18 @@ export const CONSTANTS = {
 
   // 터치 타겟 (모바일 최적화)
   MIN_TOUCH_TARGET: 44,
+
+  // 리사이즈 핸들 방향
+  RESIZE_HANDLES: {
+    SOUTH_EAST: 'se',
+    NORTH_EAST: 'ne',
+    SOUTH_WEST: 'sw',
+    NORTH_WEST: 'nw',
+    EAST: 'e',
+    WEST: 'w',
+    SOUTH: 's',
+    NORTH: 'n',
+  } as const,
 
   // 로컬 스토리지 키
   STORAGE_KEYS: {

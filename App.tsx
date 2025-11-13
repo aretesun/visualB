@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef } from 'react';
-import { Card, Position, Sticker, StickerInstance, Size } from './types';
+import { Card, Position, Sticker, StickerInstance, Size, LegacyCard } from './types';
 import CardComponent from './components/Card';
 import Toolbar from './components/Toolbar';
 import AddCardButton from './components/AddCardButton';
@@ -92,15 +92,24 @@ const App: React.FC = () => {
         // 새 키에 데이터가 없고, 이전 키에 데이터가 있으면 마이그레이션
         if (!newCards && oldCards) {
           try {
-            const parsedOldCards = JSON.parse(oldCards);
+            const parsedOldCards: LegacyCard[] = JSON.parse(oldCards);
             // 기존 데이터 마이그레이션 (type 필드 제거)
-            const migratedCards = parsedOldCards.map((item: any) => {
+            const migratedCards: Card[] = parsedOldCards.map((item) => {
               if (item.type === 'text') {
                 return { id: item.id, position: item.position, text: item.text };
               } else if (item.type === 'image') {
-                return { id: item.id, position: item.position, imageUrl: item.url };
+                return { id: item.id, position: item.position, imageUrl: item.url || item.imageUrl };
               }
-              return item;
+              // 이미 새 형식인 경우
+              return {
+                id: item.id,
+                position: item.position,
+                text: item.text,
+                imageUrl: item.imageUrl,
+                imageWidth: item.imageWidth,
+                imageHeight: item.imageHeight,
+                imageOffset: item.imageOffset,
+              };
             });
             setCards(migratedCards);
             console.log('✅ 카드 데이터 마이그레이션 완료:', migratedCards.length, '개');
