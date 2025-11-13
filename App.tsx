@@ -113,6 +113,10 @@ const App: React.FC = () => {
             });
             setCards(migratedCards);
             console.log('✅ 카드 데이터 마이그레이션 완료:', migratedCards.length, '개');
+
+            // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
+            localStorage.removeItem('visionBoardItems');
+            console.log('✅ 구버전 카드 키 삭제 완료');
           } catch (e) {
             console.error('카드 마이그레이션 실패:', e);
           }
@@ -123,23 +127,26 @@ const App: React.FC = () => {
         const oldStickerInstances = localStorage.getItem('stickerInstances');
         const newStickers = localStorage.getItem('sticker-storage');
 
-        if (!newStickers && oldStickers) {
+        if (!newStickers && (oldStickers || oldStickerInstances)) {
           try {
-            const parsedOldStickers = JSON.parse(oldStickers);
-            setStickers(parsedOldStickers);
-            console.log('✅ 스티커 팔레트 마이그레이션 완료:', parsedOldStickers.length, '개');
+            if (oldStickers) {
+              const parsedOldStickers = JSON.parse(oldStickers);
+              setStickers(parsedOldStickers);
+              console.log('✅ 스티커 팔레트 마이그레이션 완료:', parsedOldStickers.length, '개');
+            }
+
+            if (oldStickerInstances) {
+              const parsedOldInstances = JSON.parse(oldStickerInstances);
+              setInstances(parsedOldInstances);
+              console.log('✅ 스티커 인스턴스 마이그레이션 완료:', parsedOldInstances.length, '개');
+            }
+
+            // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
+            localStorage.removeItem('stickerPalette');
+            localStorage.removeItem('stickerInstances');
+            console.log('✅ 구버전 스티커 키 삭제 완료');
           } catch (e) {
             console.error('스티커 마이그레이션 실패:', e);
-          }
-        }
-
-        if (!newStickers && oldStickerInstances) {
-          try {
-            const parsedOldInstances = JSON.parse(oldStickerInstances);
-            setInstances(parsedOldInstances);
-            console.log('✅ 스티커 인스턴스 마이그레이션 완료:', parsedOldInstances.length, '개');
-          } catch (e) {
-            console.error('스티커 인스턴스 마이그레이션 실패:', e);
           }
         }
 
@@ -193,64 +200,37 @@ const App: React.FC = () => {
         }
 
         // 2. 스티커 데이터 로드 (기본 스티커 포함)
-        const defaultStickers: Sticker[] = [
-          {
-            id: 'default_santa',
-            imageUrl: santaImage,
-            name: 'Santa',
-            addedAt: Date.now() - 1000,
-            isPremade: true,
-          },
-          {
-            id: 'default_tree',
-            imageUrl: treeImage,
-            name: 'Christmas Tree',
-            addedAt: Date.now(),
-            isPremade: true,
-          }
-        ];
+        // Zustand persist가 이미 데이터를 로드했는지 확인
+        const currentStickers = useStickerStore.getState().palette;
+        const currentInstances = useStickerStore.getState().instances;
 
-        const savedStickers = localStorage.getItem(CONSTANTS.STORAGE_KEYS.STICKERS);
-        if (savedStickers) {
-          try {
-            const parsedStickers = JSON.parse(savedStickers);
-            const defaultStickerIds = new Set(defaultStickers.map(ds => ds.id));
+        // Zustand에 데이터가 없을 때만 기본 스티커를 추가
+        if (currentStickers.length === 0) {
+          const defaultStickers: Sticker[] = [
+            {
+              id: 'default_santa',
+              imageUrl: santaImage,
+              name: 'Santa',
+              addedAt: Date.now() - 1000,
+              isPremade: true,
+            },
+            {
+              id: 'default_tree',
+              imageUrl: treeImage,
+              name: 'Christmas Tree',
+              addedAt: Date.now(),
+              isPremade: true,
+            }
+          ];
 
-            const uniqueStickers: Sticker[] = [];
-            const seenIds = new Set<string>();
-
-            parsedStickers.forEach((s: Sticker) => {
-              if (!seenIds.has(s.id)) {
-                seenIds.add(s.id);
-                if (defaultStickerIds.has(s.id)) {
-                  uniqueStickers.push({ ...s, isPremade: true });
-                } else {
-                  uniqueStickers.push(s);
-                }
-              }
-            });
-
-            const missingDefaultStickers = defaultStickers.filter(ds => !seenIds.has(ds.id));
-            const finalStickers = [...uniqueStickers, ...missingDefaultStickers];
-            setStickers(finalStickers);
-
-            localStorage.setItem(CONSTANTS.STORAGE_KEYS.STICKERS, JSON.stringify(finalStickers));
-          } catch (e) {
-            console.error('Failed to load stickers:', e);
-            setStickers(defaultStickers);
-          }
-        } else {
           setStickers(defaultStickers);
+          console.log('✅ 기본 스티커 로드 완료');
+        } else {
+          console.log('✅ Zustand에서 스티커 데이터 로드 완료:', currentStickers.length, '개');
         }
 
-        const savedStickerInstances = localStorage.getItem(CONSTANTS.STORAGE_KEYS.STICKER_INSTANCES);
-        if (savedStickerInstances) {
-          try {
-            const parsedInstances = JSON.parse(savedStickerInstances);
-            setInstances(parsedInstances);
-          } catch (e) {
-            console.error('Failed to load sticker instances:', e);
-          }
+        if (currentInstances.length > 0) {
+          console.log('✅ Zustand에서 스티커 인스턴스 로드 완료:', currentInstances.length, '개');
         }
       } catch (error) {
         console.error('Failed to load initial data:', error);
