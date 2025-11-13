@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 import { Card, Position, Sticker, StickerInstance, Size } from './types';
-import VisionItem from './components/VisionItem';
+import CardComponent from './components/Card';
 import Toolbar from './components/Toolbar';
 import AddCardButton from './components/AddCardButton';
 import LinksMenu from './components/LinksMenu';
@@ -664,7 +664,7 @@ const App: React.FC = () => {
 
       {/* 카드들 */}
       {cards.map((item) => (
-        <VisionItem
+        <CardComponent
           key={item.id}
           item={item}
           onPositionChange={updateItemPosition}
