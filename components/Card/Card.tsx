@@ -9,6 +9,7 @@ import CardControls from './CardControls';
 
 interface CardProps {
   item: CardType;
+  index: number; // 렌더링 순서를 위한 인덱스
   onPositionChange: (id: number, position: Position, delta?: Position) => void;
   onTextChange: (id: number, text: string) => void;
   onImageChange: (id: number, imageUrl: string) => void;
@@ -29,6 +30,7 @@ interface CardProps {
  */
 const Card: React.FC<CardProps> = ({
   item,
+  index,
   onPositionChange,
   onTextChange,
   onImageChange,
@@ -373,7 +375,7 @@ const Card: React.FC<CardProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border p-3 ${
-        isDragging ? 'shadow-black/50 scale-105 z-50' : 'shadow-black/30'
+        isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
       } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${
         isResizing ? 'cursor-nwse-resize' : ''
       } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : 'border-white/20'}`}
@@ -381,6 +383,7 @@ const Card: React.FC<CardProps> = ({
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${cardWidth}px`,
+        zIndex: isDragging ? CONSTANTS.Z_INDEX.DRAGGING : CONSTANTS.Z_INDEX.CARDS + index,
         touchAction: 'none',
       }}
       tabIndex={0}

@@ -2,9 +2,11 @@ import React, { useRef } from 'react';
 import { StickerInstance, Position, Size } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { TrashIcon } from './Icons';
+import { CONSTANTS } from '../utils/constants';
 
 interface StickerObjectProps {
   sticker: StickerInstance;
+  index: number; // 렌더링 순서를 위한 인덱스
   onPositionChange: (id: string, position: Position, delta?: Position) => void;
   onSizeChange: (id: string, size: Size) => void;
   onDelete: (id: string) => void;
@@ -16,6 +18,7 @@ interface StickerObjectProps {
 
 const StickerObject: React.FC<StickerObjectProps> = ({
   sticker,
+  index,
   onPositionChange,
   onSizeChange,
   onDelete,
@@ -186,14 +189,14 @@ const StickerObject: React.FC<StickerObjectProps> = ({
         handleClick(e);
       }}
       className={`absolute cursor-move group ${
-        isDragging ? 'z-50' : ''
-      } ${isSelected ? 'ring-2 ring-blue-400 rounded' : ''}`}
+        isSelected ? 'ring-2 ring-blue-400 rounded' : ''
+      }`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${sticker.size.width}px`,
         height: `${sticker.size.height}px`,
-        zIndex: sticker.zIndex,
+        zIndex: isDragging ? CONSTANTS.Z_INDEX.DRAGGING : CONSTANTS.Z_INDEX.STICKERS + index,
         touchAction: 'none',
       }}
       tabIndex={0}

@@ -88,6 +88,14 @@ export const CONSTANTS = {
     'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=2080&auto=format&fit=crop', // 중국 여행
     'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop', // 프라하
   ],
+
+  // Z-인덱스 계층
+  Z_INDEX: {
+    CARDS: 10,
+    STICKERS: 100,
+    DRAGGING: 1000,
+    UI: 1100,
+  },
 } as const;
 
 export type Constants = typeof CONSTANTS;

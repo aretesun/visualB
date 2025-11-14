@@ -209,11 +209,11 @@ export const useStickerStore = create<StickerState>()(
 
         bringInstanceToFront: (id) => {
           set((state) => {
-            const maxZIndex = Math.max(...state.instances.map((i) => i.zIndex), 999);
+            const instance = state.instances.find((i) => i.id === id);
+            if (!instance) return state;
+
             return {
-              instances: state.instances.map((inst) =>
-                inst.id === id ? { ...inst, zIndex: maxZIndex + 1 } : inst
-              ),
+              instances: [...state.instances.filter((i) => i.id !== id), instance],
             };
           });
         },
