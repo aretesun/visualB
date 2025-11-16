@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { StickerInstance, Position, Size } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
 import { TrashIcon } from './Icons';
+import { CONSTANTS } from '../utils/constants';
 
 interface StickerObjectProps {
   sticker: StickerInstance;
@@ -186,14 +187,16 @@ const StickerObject: React.FC<StickerObjectProps> = ({
         handleClick(e);
       }}
       className={`absolute cursor-move group ${
-        isDragging ? 'z-50' : ''
-      } ${isSelected ? 'ring-2 ring-blue-400 rounded' : ''}`}
+        isSelected ? 'ring-2 ring-blue-400 rounded' : ''
+      }`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${sticker.size.width}px`,
         height: `${sticker.size.height}px`,
-        zIndex: sticker.zIndex,
+        zIndex: isDragging
+          ? CONSTANTS.Z_INDEX.STICKER_DRAGGING
+          : Math.min(Math.max(sticker.zIndex, CONSTANTS.Z_INDEX.STICKER_BASE), CONSTANTS.Z_INDEX.STICKER_MAX),
         touchAction: 'none',
       }}
       tabIndex={0}

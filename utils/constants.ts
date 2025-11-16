@@ -32,6 +32,19 @@ export const CONSTANTS = {
   // 터치 타겟 (모바일 최적화)
   MIN_TOUCH_TARGET: 44,
 
+  // z-index 계층 구조
+  Z_INDEX: {
+    CARD_BASE: 10,              // 카드 기본
+    CARD_DRAGGING: 50,          // 카드 드래그 중
+    STICKER_BASE: 20,           // 스티커 기본 (카드보다 위)
+    STICKER_MAX: 29,            // 스티커 최대값 (UI 요소보다 아래)
+    STICKER_DRAGGING: 50,       // 스티커 드래그 중
+    TOOLBAR: 30,                // 툴바
+    NOTIFICATION: 40,           // 알림, 팔레트
+    MENU: 50,                   // 메뉴
+    MODAL: 60,                  // 모달 (최상위)
+  } as const,
+
   // 리사이즈 핸들 방향
   RESIZE_HANDLES: {
     SOUTH_EAST: 'se',

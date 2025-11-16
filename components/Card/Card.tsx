@@ -373,7 +373,7 @@ const Card: React.FC<CardProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border p-3 ${
-        isDragging ? 'shadow-black/50 scale-105 z-50' : 'shadow-black/30'
+        isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
       } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${
         isResizing ? 'cursor-nwse-resize' : ''
       } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : 'border-white/20'}`}
@@ -381,6 +381,7 @@ const Card: React.FC<CardProps> = ({
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${cardWidth}px`,
+        zIndex: isDragging ? CONSTANTS.Z_INDEX.CARD_DRAGGING : CONSTANTS.Z_INDEX.CARD_BASE,
         touchAction: 'none',
       }}
       tabIndex={0}

@@ -570,7 +570,7 @@ const App: React.FC = () => {
           imageUrl: draggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
           size: { width: 80, height: 80 },
-          zIndex: 1000 + stickerInstances.length,
+          zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
         };
         addInstance(newInstance);
       }
