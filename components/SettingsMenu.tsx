@@ -80,8 +80,15 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
 
       {/* 설정 메뉴 */}
       {isOpen && (
-        <div className="absolute bottom-16 left-0 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[180px]">
-          <div className="flex flex-col space-y-2">
+        <>
+          {/* 백그라운드 오버레이 */}
+          <div
+            className="fixed inset-0 bg-transparent z-39"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close settings menu"
+          />
+          <div className="absolute bottom-16 left-0 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[180px]">
+            <div className="flex flex-col space-y-2">
             <button
               onClick={handleBackup}
               className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-colors text-left"
@@ -133,6 +140,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* 숨겨진 파일 입력 */}

@@ -75,8 +75,15 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
 
       {/* 펼쳐진 상태 - 사이드바 */}
       {isExpanded && (
-        <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-30">
-          <div className="h-full flex flex-col">
+        <>
+          {/* 백그라운드 오버레이 */}
+          <div
+            className="fixed inset-0 bg-transparent z-29"
+            onClick={onToggle}
+            aria-label="Close palette"
+          />
+          <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-30">
+            <div className="h-full flex flex-col">
             {/* 헤더 */}
             <div className="flex items-center justify-between p-4 border-b border-white/20 select-none">
               <h3 className="text-white font-semibold flex items-center space-x-2">
@@ -160,6 +167,7 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
             </div>
           </div>
         </div>
+        </>
       )}
 
       {/* 추가 모달 */}
