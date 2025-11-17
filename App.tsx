@@ -550,18 +550,14 @@ const App: React.FC = () => {
     }
 
     let rafId: number | null = null; // requestAnimationFrame ID
-    let isListenerActive = true; // 리스너 활성 상태 플래그
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isListenerActive) return;
-
       // requestAnimationFrame으로 성능 최적화 및 호출 빈도 제한
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
 
       rafId = requestAnimationFrame(() => {
-        if (!isListenerActive) return;
         setDragGhostPosition({ x: e.clientX, y: e.clientY });
         rafId = null;
       });
@@ -571,13 +567,10 @@ const App: React.FC = () => {
       // 최신 상태 확인 (클로저 문제 방지)
       const currentDraggingSticker = useStickerStore.getState().draggingSticker;
 
-      // 중복 실행 방지: ref 체크, 리스너 상태 체크, 현재 드래깅 상태 체크
-      if (stickerDroppedRef.current || !isListenerActive || !currentDraggingSticker || !canvasRef.current) {
+      // 중복 실행 방지
+      if (stickerDroppedRef.current || !currentDraggingSticker || !canvasRef.current) {
         return;
       }
-
-      // 즉시 리스너 비활성화 (중복 실행 완전 차단)
-      isListenerActive = false;
 
       // RAF 클린업
       if (rafId !== null) {
@@ -606,18 +599,17 @@ const App: React.FC = () => {
       setDragGhostPosition(null);
     };
 
+    // once 옵션으로 자동 제거 보장
     document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('mouseup', handleMouseUp, { once: true });
 
     return () => {
-      // 리스너 비활성화
-      isListenerActive = false;
-
       // RAF 클린업
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
       document.removeEventListener('mousemove', handleMouseMove);
+      // mouseup은 once 옵션으로 이미 제거되었을 수 있음
       document.removeEventListener('mouseup', handleMouseUp);
     };
     // Zustand actions는 안정적이므로 dependencies에서 제외
