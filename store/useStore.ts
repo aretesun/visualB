@@ -212,8 +212,18 @@ export const useStickerStore = create<StickerState>()(
             const instance = state.instances.find((i) => i.id === id);
             if (!instance) return state;
 
+            // 20-29 범위 내에서 가장 높은 zIndex 찾기
+            const maxZIndex = Math.max(
+              ...state.instances.map((i) => i.zIndex),
+              CONSTANTS.Z_INDEX.STICKER_BASE - 1
+            );
+            // 최대값이 STICKER_MAX 미만이면 +1, 아니면 STICKER_MAX 사용
+            const newZIndex = Math.min(maxZIndex + 1, CONSTANTS.Z_INDEX.STICKER_MAX);
+
             return {
-              instances: [...state.instances.filter((i) => i.id !== id), instance],
+              instances: state.instances.map((inst) =>
+                inst.id === id ? { ...inst, zIndex: newZIndex } : inst
+              ),
             };
           });
         },

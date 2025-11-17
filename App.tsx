@@ -557,14 +557,15 @@ const App: React.FC = () => {
       const dropY = e.clientY - canvasRect.top;
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
-        const newInstance: Omit<StickerInstance, 'zIndex'> = {
+        const newInstance: StickerInstance = {
           id: `sticker_inst_${Date.now()}`,
           stickerId: draggingSticker.id,
           imageUrl: draggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
           size: { width: 80, height: 80 },
+          zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
         };
-        addInstance(newInstance as StickerInstance);
+        addInstance(newInstance);
       }
 
       setDraggingSticker(null);

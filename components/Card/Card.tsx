@@ -383,7 +383,7 @@ const Card: React.FC<CardProps> = ({
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${cardWidth}px`,
-        zIndex: isDragging ? CONSTANTS.Z_INDEX.DRAGGING : CONSTANTS.Z_INDEX.CARDS + index,
+        zIndex: isDragging ? CONSTANTS.Z_INDEX.CARD_DRAGGING : CONSTANTS.Z_INDEX.CARD_BASE + index,
         touchAction: 'none',
       }}
       tabIndex={0}

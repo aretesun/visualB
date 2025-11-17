@@ -58,5 +58,6 @@ export interface StickerInstance {
   imageUrl: string;          // 이미지 (빠른 접근용)
   position: Position;        // { x, y }
   size: Size;                // { width, height }
+  zIndex: number;            // 레이어 순서 (20-29: 카드(10)보다 위, UI 요소(30+)보다 아래)
   rotation?: number;         // 미래: 회전 각도
 }
