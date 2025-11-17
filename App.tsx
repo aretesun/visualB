@@ -84,6 +84,9 @@ const App: React.FC = () => {
   const stickerDroppedRef = useRef<boolean>(false); // 스티커 드롭 플래그
   const rafIdRef = useRef<number | null>(null); // RAF ID를 컴포넌트 레벨로 이동
 
+  // 설정 메뉴 상태 (외부에서 제어)
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+
   // 초기 데이터 로드
   useEffect(() => {
     const loadInitialData = async () => {
@@ -619,7 +622,21 @@ const App: React.FC = () => {
       return;
     }
 
-    if ((e.target as HTMLElement).closest('.fixed')) {
+    // .fixed 요소 클릭 체크 (팔레트, 설정 메뉴 등)
+    const clickedFixed = (e.target as HTMLElement).closest('.fixed');
+
+    // 팔레트나 설정 메뉴를 클릭한 경우 그대로 두기
+    if (clickedFixed) {
+      return;
+    }
+
+    // 캔버스 영역 클릭 시 팔레트나 설정 메뉴가 열려있으면 닫기
+    if (isPaletteExpanded) {
+      togglePalette();
+      return;
+    }
+    if (isSettingsOpen) {
+      setIsSettingsOpen(false);
       return;
     }
 
@@ -643,7 +660,7 @@ const App: React.FC = () => {
     if (!e.ctrlKey && !e.metaKey) {
       clearSelection();
     }
-  }, [draggingSticker, setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
+  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
 
   useEffect(() => {
     if (!isSelecting) return;
@@ -830,6 +847,8 @@ const App: React.FC = () => {
             items={cards}
             onRestore={handleRestore}
             onShowToast={showToast}
+            isOpen={isSettingsOpen}
+            onToggle={() => setIsSettingsOpen(!isSettingsOpen)}
           />
         </>
       )}

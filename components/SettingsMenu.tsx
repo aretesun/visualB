@@ -7,10 +7,23 @@ interface SettingsMenuProps {
   items: Card[];
   onRestore: (items: Card[]) => void;
   onShowToast: (message: string) => void;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToast }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToast, isOpen: externalIsOpen, onToggle }) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+
+  // 외부에서 제어하는 경우 외부 상태 사용, 아니면 내부 상태 사용
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const toggleOpen = onToggle || (() => setInternalIsOpen(!internalIsOpen));
+  const closeMenu = () => {
+    if (onToggle && externalIsOpen) {
+      onToggle();
+    } else {
+      setInternalIsOpen(false);
+    }
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { language, setLanguage, t } = useLanguage();
 
@@ -27,7 +40,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       onShowToast(t.toast.backupSuccess);
-      setIsOpen(false);
+      closeMenu();
     } catch (error) {
       onShowToast(t.toast.backupFailed);
       console.error('Backup failed:', error);
@@ -55,7 +68,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
 
         onRestore(restoredItems);
         onShowToast(t.toast.restoreSuccess);
-        setIsOpen(false);
+        closeMenu();
       } catch (error) {
         onShowToast(t.toast.restoreFailed);
         console.error('Restore failed:', error);
@@ -71,7 +84,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
     <div className="fixed bottom-6 left-6 z-40">
       {/* 설정 이모지 버튼 */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={toggleOpen}
         className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all backdrop-blur-md shadow-lg text-2xl"
         aria-label="Toggle settings menu"
       >
@@ -80,27 +93,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
 
       {/* 설정 메뉴 */}
       {isOpen && (
-        <>
-          {/* 백그라운드 오버레이 */}
-          <div
-            className="fixed inset-0 bg-transparent z-39"
-            onClick={(e) => {
-              // 스티커나 카드 클릭은 무시 (통과)
-              const target = e.target as HTMLElement;
-              if (target.closest('[data-object="sticker"]') || target.closest('[data-object="card"]')) {
-                return;
-              }
-              // 설정 메뉴 자체 클릭도 무시
-              if (target.closest('.absolute.bottom-16')) {
-                return;
-              }
-              // 백그라운드 클릭만 메뉴 닫기
-              setIsOpen(false);
-            }}
-            aria-label="Close settings menu"
-          />
-          <div className="absolute bottom-16 left-0 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[180px]">
-            <div className="flex flex-col space-y-2">
+        <div className="absolute bottom-16 left-0 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[180px] z-40">
+          <div className="flex flex-col space-y-2">
             <button
               onClick={handleBackup}
               className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-colors text-left"
@@ -127,7 +121,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
                 <button
                   onClick={() => {
                     setLanguage('ko' as Language);
-                    setIsOpen(false);
+                    closeMenu();
                   }}
                   className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors text-left ${
                     language === 'ko' ? 'bg-white/30' : 'hover:bg-white/20'
@@ -139,7 +133,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
                 <button
                   onClick={() => {
                     setLanguage('en' as Language);
-                    setIsOpen(false);
+                    closeMenu();
                   }}
                   className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors text-left ${
                     language === 'en' ? 'bg-white/30' : 'hover:bg-white/20'
@@ -152,7 +146,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
             </div>
           </div>
         </div>
-        </>
       )}
 
       {/* 숨겨진 파일 입력 */}
