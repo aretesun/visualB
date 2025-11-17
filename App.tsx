@@ -81,6 +81,7 @@ const App: React.FC = () => {
   const dragStartPositionsRef = useRef<Map<string, Position>>(new Map());
   const draggingObjectRef = useRef<{ id: string; type: 'card' | 'sticker' } | null>(null);
   const lastDragDeltaRef = useRef<Position | null>(null);
+  const stickerDroppedRef = useRef<boolean>(false); // 스티커 드롭 플래그
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -543,9 +544,11 @@ const App: React.FC = () => {
 
   // 드래그 앤 드롭 (팔레트에서 캔버스로)
   useEffect(() => {
-    if (!draggingSticker) return;
+    if (!draggingSticker) {
+      stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
+      return;
+    }
 
-    let isDropped = false; // 중복 드롭 방지 플래그
     let rafId: number | null = null; // requestAnimationFrame ID
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -561,7 +564,8 @@ const App: React.FC = () => {
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      if (isDropped || !canvasRef.current || !draggingSticker) return;
+      // ref를 사용한 중복 드롭 방지
+      if (stickerDroppedRef.current || !canvasRef.current) return;
 
       // RAF 클린업
       if (rafId !== null) {
@@ -574,7 +578,7 @@ const App: React.FC = () => {
       const dropY = e.clientY - canvasRect.top;
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
-        isDropped = true; // 드롭 완료 표시
+        stickerDroppedRef.current = true; // 드롭 완료 표시
         const newInstance: StickerInstance = {
           id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           stickerId: draggingSticker.id,
