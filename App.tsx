@@ -801,13 +801,15 @@ const App: React.FC = () => {
       {/* 드래그 중인 고스트 이미지 */}
       {draggingSticker && dragGhostPosition && (
         <div
-          className="fixed pointer-events-none z-50"
+          className="fixed pointer-events-none z-50 animate-pulse"
           style={{
             left: `${dragGhostPosition.x - 40}px`,
             top: `${dragGhostPosition.y - 40}px`,
             width: '80px',
             height: '80px',
-            opacity: 0.6,
+            opacity: 0.8,
+            transform: 'scale(1.1)',
+            filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))',
           }}
         >
           <img

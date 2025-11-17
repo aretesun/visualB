@@ -24,6 +24,8 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
   const [urlInput, setUrlInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [longPressStickerId, setLongPressStickerId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<number | null>(null);
 
   const handleAddByUrl = () => {
     if (urlInput.trim()) {
@@ -57,6 +59,52 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // 터치 이벤트 핸들러
+  const handleTouchStart = (sticker: Sticker, e: React.TouchEvent) => {
+    e.stopPropagation();
+
+    // 롱 프레스 타이머 시작 (200ms)
+    longPressTimerRef.current = window.setTimeout(() => {
+      setLongPressStickerId(sticker.id);
+
+      // 햅틱 피드백 (지원되는 경우)
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+
+      // 마우스 이벤트로 변환하여 기존 드래그 로직 사용
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        bubbles: true,
+      }) as any;
+      onDragStart(sticker, mouseEvent);
+    }, 200);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // 터치가 움직이면 롱 프레스 취소
+    if (longPressTimerRef.current && !longPressStickerId) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // 롱 프레스 타이머 정리
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setLongPressStickerId(null);
+  };
+
+  const handleMouseDownSticker = (sticker: Sticker, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDragStart(sticker, e);
   };
 
   return (
@@ -106,11 +154,13 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
                   {stickers.map((sticker) => (
                     <div
                       key={sticker.id}
-                      className="relative group bg-white/5 hover:bg-white/10 rounded-lg p-2 cursor-move transition-colors select-none"
-                      onMouseDown={(e) => {
-                        e.stopPropagation(); // 캔버스 선택 박스 방지
-                        onDragStart(sticker, e);
-                      }}
+                      className={`relative group bg-white/5 hover:bg-white/10 rounded-lg p-2 cursor-move transition-all select-none ${
+                        longPressStickerId === sticker.id ? 'scale-110 bg-white/20 shadow-lg' : ''
+                      }`}
+                      onMouseDown={(e) => handleMouseDownSticker(sticker, e)}
+                      onTouchStart={(e) => handleTouchStart(sticker, e)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                     >
                       <div className="aspect-square flex items-center justify-center mb-1">
                         <img
