@@ -84,7 +84,19 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
           {/* 백그라운드 오버레이 */}
           <div
             className="fixed inset-0 bg-transparent z-39"
-            onClick={() => setIsOpen(false)}
+            onClick={(e) => {
+              // 스티커나 카드 클릭은 무시 (통과)
+              const target = e.target as HTMLElement;
+              if (target.closest('[data-object="sticker"]') || target.closest('[data-object="card"]')) {
+                return;
+              }
+              // 설정 메뉴 자체 클릭도 무시
+              if (target.closest('.absolute.bottom-16')) {
+                return;
+              }
+              // 백그라운드 클릭만 메뉴 닫기
+              setIsOpen(false);
+            }}
             aria-label="Close settings menu"
           />
           <div className="absolute bottom-16 left-0 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[180px]">
