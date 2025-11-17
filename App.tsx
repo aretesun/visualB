@@ -538,6 +538,7 @@ const App: React.FC = () => {
 
   // 스티커 핸들러
   const handleStickerDragStart = useCallback((sticker: Sticker, e: React.MouseEvent) => {
+    stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
     setDraggingSticker(sticker);
     setDragGhostPosition({ x: e.clientX, y: e.clientY });
   }, [setDraggingSticker, setDragGhostPosition]);
