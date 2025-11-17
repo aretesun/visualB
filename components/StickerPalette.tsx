@@ -132,10 +132,10 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
                             e.stopPropagation();
                             onDeleteSticker(sticker.id);
                           }}
-                          className="absolute top-1 right-1 p-1 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 p-2 sm:p-1.5 bg-red-500/80 hover:bg-red-500 rounded opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity touch-manipulation"
                           aria-label="Delete sticker"
                         >
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 sm:w-3 sm:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>

@@ -214,17 +214,17 @@ const StickerObject: React.FC<StickerObjectProps> = ({
 
       {/* 삭제 버튼 - 읽기 전용 모드에서 숨김 */}
       {!isReadOnly && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete(sticker.id);
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded-md shadow-lg"
+            className="p-2.5 sm:p-2 bg-red-500/80 hover:bg-red-500 rounded-md shadow-lg touch-manipulation"
             aria-label="Delete sticker"
           >
-            <TrashIcon className="w-3 h-3 text-white" />
+            <TrashIcon className="w-4 h-4 sm:w-3 sm:h-3 text-white" />
           </button>
         </div>
       )}
@@ -237,7 +237,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
             data-resize-handle
             onPointerDown={(e) => handleResizeStart(e, 'se')}
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded-full"
+            className="absolute bottom-0 right-0 w-5 h-5 sm:w-4 sm:h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-white/80 rounded-full touch-manipulation"
             style={{ touchAction: 'none' }}
           />
           {/* 우상단 */}
@@ -245,7 +245,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
             data-resize-handle
             onPointerDown={(e) => handleResizeStart(e, 'ne')}
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded-full"
+            className="absolute top-0 right-0 w-5 h-5 sm:w-4 sm:h-4 cursor-nesw-resize opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-white/80 rounded-full touch-manipulation"
             style={{ touchAction: 'none' }}
           />
           {/* 좌하단 */}
@@ -253,7 +253,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
             data-resize-handle
             onPointerDown={(e) => handleResizeStart(e, 'sw')}
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded-full"
+            className="absolute bottom-0 left-0 w-5 h-5 sm:w-4 sm:h-4 cursor-nesw-resize opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-white/80 rounded-full touch-manipulation"
             style={{ touchAction: 'none' }}
           />
           {/* 좌상단 */}
@@ -261,7 +261,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
             data-resize-handle
             onPointerDown={(e) => handleResizeStart(e, 'nw')}
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 rounded-full"
+            className="absolute top-0 left-0 w-5 h-5 sm:w-4 sm:h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity bg-white/80 rounded-full touch-manipulation"
             style={{ touchAction: 'none' }}
           />
         </>
