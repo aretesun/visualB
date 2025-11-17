@@ -545,20 +545,23 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!draggingSticker) return;
 
+    let isDropped = false; // 중복 드롭 방지 플래그
+
     const handleMouseMove = (e: MouseEvent) => {
       setDragGhostPosition({ x: e.clientX, y: e.clientY });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      if (!canvasRef.current || !draggingSticker) return;
+      if (isDropped || !canvasRef.current || !draggingSticker) return;
 
       const canvasRect = canvasRef.current.getBoundingClientRect();
       const dropX = e.clientX - canvasRect.left;
       const dropY = e.clientY - canvasRect.top;
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
+        isDropped = true; // 드롭 완료 표시
         const newInstance: StickerInstance = {
-          id: `sticker_inst_${Date.now()}`,
+          id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           stickerId: draggingSticker.id,
           imageUrl: draggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
@@ -579,7 +582,9 @@ const App: React.FC = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingSticker, addInstance, setDraggingSticker, setDragGhostPosition]);
+    // Zustand actions는 안정적이므로 dependencies에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draggingSticker]);
 
   // 드래그 박스 선택
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
