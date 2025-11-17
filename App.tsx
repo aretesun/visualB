@@ -81,6 +81,7 @@ const App: React.FC = () => {
   const dragStartPositionsRef = useRef<Map<string, Position>>(new Map());
   const draggingObjectRef = useRef<{ id: string; type: 'card' | 'sticker' } | null>(null);
   const lastDragDeltaRef = useRef<Position | null>(null);
+  const stickerDroppedRef = useRef<boolean>(false); // 스티커 드롭 플래그
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -543,22 +544,43 @@ const App: React.FC = () => {
 
   // 드래그 앤 드롭 (팔레트에서 캔버스로)
   useEffect(() => {
-    if (!draggingSticker) return;
+    if (!draggingSticker) {
+      stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
+      return;
+    }
+
+    let rafId: number | null = null; // requestAnimationFrame ID
 
     const handleMouseMove = (e: MouseEvent) => {
-      setDragGhostPosition({ x: e.clientX, y: e.clientY });
+      // requestAnimationFrame으로 성능 최적화 및 호출 빈도 제한
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame(() => {
+        setDragGhostPosition({ x: e.clientX, y: e.clientY });
+        rafId = null;
+      });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      if (!canvasRef.current || !draggingSticker) return;
+      // ref를 사용한 중복 드롭 방지
+      if (stickerDroppedRef.current || !canvasRef.current) return;
+
+      // RAF 클린업
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
 
       const canvasRect = canvasRef.current.getBoundingClientRect();
       const dropX = e.clientX - canvasRect.left;
       const dropY = e.clientY - canvasRect.top;
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
+        stickerDroppedRef.current = true; // 드롭 완료 표시
         const newInstance: StickerInstance = {
-          id: `sticker_inst_${Date.now()}`,
+          id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           stickerId: draggingSticker.id,
           imageUrl: draggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
@@ -576,13 +598,24 @@ const App: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
+      // RAF 클린업
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingSticker, addInstance, setDraggingSticker, setDragGhostPosition]);
+    // Zustand actions는 안정적이므로 dependencies에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draggingSticker]);
 
   // 드래그 박스 선택
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    // 스티커 팔레트에서 드래그 중이면 선택 박스 비활성화
+    if (draggingSticker) {
+      return;
+    }
+
     if ((e.target as HTMLElement).closest('.fixed')) {
       return;
     }
@@ -607,7 +640,7 @@ const App: React.FC = () => {
     if (!e.ctrlKey && !e.metaKey) {
       clearSelection();
     }
-  }, [setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
+  }, [draggingSticker, setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
 
   useEffect(() => {
     if (!isSelecting) return;
