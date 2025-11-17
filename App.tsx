@@ -546,13 +546,28 @@ const App: React.FC = () => {
     if (!draggingSticker) return;
 
     let isDropped = false; // 중복 드롭 방지 플래그
+    let rafId: number | null = null; // requestAnimationFrame ID
 
     const handleMouseMove = (e: MouseEvent) => {
-      setDragGhostPosition({ x: e.clientX, y: e.clientY });
+      // requestAnimationFrame으로 성능 최적화 및 호출 빈도 제한
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame(() => {
+        setDragGhostPosition({ x: e.clientX, y: e.clientY });
+        rafId = null;
+      });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
       if (isDropped || !canvasRef.current || !draggingSticker) return;
+
+      // RAF 클린업
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
 
       const canvasRect = canvasRef.current.getBoundingClientRect();
       const dropX = e.clientX - canvasRect.left;
@@ -579,6 +594,10 @@ const App: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
+      // RAF 클린업
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -588,6 +607,11 @@ const App: React.FC = () => {
 
   // 드래그 박스 선택
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    // 스티커 팔레트에서 드래그 중이면 선택 박스 비활성화
+    if (draggingSticker) {
+      return;
+    }
+
     if ((e.target as HTMLElement).closest('.fixed')) {
       return;
     }
@@ -612,7 +636,7 @@ const App: React.FC = () => {
     if (!e.ctrlKey && !e.metaKey) {
       clearSelection();
     }
-  }, [setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
+  }, [draggingSticker, setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
 
   useEffect(() => {
     if (!isSelecting) return;
