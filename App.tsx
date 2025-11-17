@@ -545,27 +545,39 @@ const App: React.FC = () => {
   // 드래그 앤 드롭 (팔레트에서 캔버스로)
   useEffect(() => {
     if (!draggingSticker) {
-      stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
+      stickerDroppedRef.current = false; // 드래그 종료 시 플래그 초기화
       return;
     }
 
     let rafId: number | null = null; // requestAnimationFrame ID
+    let isListenerActive = true; // 리스너 활성 상태 플래그
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (!isListenerActive) return;
+
       // requestAnimationFrame으로 성능 최적화 및 호출 빈도 제한
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
 
       rafId = requestAnimationFrame(() => {
+        if (!isListenerActive) return;
         setDragGhostPosition({ x: e.clientX, y: e.clientY });
         rafId = null;
       });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      // ref를 사용한 중복 드롭 방지
-      if (stickerDroppedRef.current || !canvasRef.current) return;
+      // 최신 상태 확인 (클로저 문제 방지)
+      const currentDraggingSticker = useStickerStore.getState().draggingSticker;
+
+      // 중복 실행 방지: ref 체크, 리스너 상태 체크, 현재 드래깅 상태 체크
+      if (stickerDroppedRef.current || !isListenerActive || !currentDraggingSticker || !canvasRef.current) {
+        return;
+      }
+
+      // 즉시 리스너 비활성화 (중복 실행 완전 차단)
+      isListenerActive = false;
 
       // RAF 클린업
       if (rafId !== null) {
@@ -581,8 +593,8 @@ const App: React.FC = () => {
         stickerDroppedRef.current = true; // 드롭 완료 표시
         const newInstance: StickerInstance = {
           id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          stickerId: draggingSticker.id,
-          imageUrl: draggingSticker.imageUrl,
+          stickerId: currentDraggingSticker.id,
+          imageUrl: currentDraggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
           size: { width: 80, height: 80 },
           zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
@@ -598,6 +610,9 @@ const App: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp);
 
     return () => {
+      // 리스너 비활성화
+      isListenerActive = false;
+
       // RAF 클린업
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
