@@ -538,6 +538,7 @@ const App: React.FC = () => {
 
   // 스티커 핸들러
   const handleStickerDragStart = useCallback((sticker: Sticker, e: React.MouseEvent) => {
+    console.log('🟡 Drag start for', sticker.id, '- resetting dropped flag to false');
     stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
     setDraggingSticker(sticker);
     setDragGhostPosition({ x: e.clientX, y: e.clientY });
@@ -546,10 +547,12 @@ const App: React.FC = () => {
   // 드래그 앤 드롭 (팔레트에서 캔버스로)
   useEffect(() => {
     if (!draggingSticker) {
+      console.log('⚪ useEffect: no dragging sticker, resetting flag');
       stickerDroppedRef.current = false; // 드래그 종료 시 플래그 초기화
       return;
     }
 
+    console.log('🟢 useEffect: adding event listeners for', draggingSticker.id);
     let rafId: number | null = null; // requestAnimationFrame ID
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -565,11 +568,14 @@ const App: React.FC = () => {
     };
 
     const handleMouseUp = (e: MouseEvent) => {
+      console.log('🔵 mouseup fired, dropped flag:', stickerDroppedRef.current);
+
       // 최신 상태 확인 (클로저 문제 방지)
       const currentDraggingSticker = useStickerStore.getState().draggingSticker;
 
       // 중복 실행 방지
       if (stickerDroppedRef.current || !currentDraggingSticker || !canvasRef.current) {
+        console.log('🔴 Early return - dropped:', stickerDroppedRef.current, 'dragging:', !!currentDraggingSticker, 'canvas:', !!canvasRef.current);
         return;
       }
 
@@ -585,6 +591,7 @@ const App: React.FC = () => {
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
         stickerDroppedRef.current = true; // 드롭 완료 표시
+        console.log('✅ Creating sticker instance, setting dropped flag to true');
         const newInstance: StickerInstance = {
           id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           stickerId: currentDraggingSticker.id,
@@ -594,6 +601,8 @@ const App: React.FC = () => {
           zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
         };
         addInstance(newInstance);
+      } else {
+        console.log('❌ Drop outside canvas');
       }
 
       setDraggingSticker(null);
@@ -605,6 +614,7 @@ const App: React.FC = () => {
     document.addEventListener('mouseup', handleMouseUp, { once: true });
 
     return () => {
+      console.log('🔴 useEffect cleanup: removing event listeners');
       // RAF 클린업
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
