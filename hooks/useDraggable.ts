@@ -108,7 +108,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
 
     if (onDragEnd) {
       // delta를 전달하지 않음 - 드래그 종료 신호
-      onDragEnd(finalPosition, undefined);
+      onDragEnd(finalPosition);
     }
   };
 

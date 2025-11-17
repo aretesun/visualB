@@ -6,6 +6,7 @@ import { CONSTANTS } from '../utils/constants';
 
 interface StickerObjectProps {
   sticker: StickerInstance;
+  index: number; // 렌더링 순서를 위한 인덱스
   onPositionChange: (id: string, position: Position, delta?: Position) => void;
   onSizeChange: (id: string, size: Size) => void;
   onDelete: (id: string) => void;
@@ -17,6 +18,7 @@ interface StickerObjectProps {
 
 const StickerObject: React.FC<StickerObjectProps> = ({
   sticker,
+  index,
   onPositionChange,
   onSizeChange,
   onDelete,

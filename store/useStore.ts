@@ -209,6 +209,9 @@ export const useStickerStore = create<StickerState>()(
 
         bringInstanceToFront: (id) => {
           set((state) => {
+            const instance = state.instances.find((i) => i.id === id);
+            if (!instance) return state;
+
             // 20-29 범위 내에서 가장 높은 zIndex 찾기
             const maxZIndex = Math.max(
               ...state.instances.map((i) => i.zIndex),

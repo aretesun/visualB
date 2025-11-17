@@ -78,8 +78,9 @@ const App: React.FC = () => {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const isInitialLoadComplete = useRef(false);
-  const dragStartPositionsRef = useRef<Map<number | string, Position>>(new Map());
-  const draggingObjectRef = useRef<number | string | null>(null);
+  const dragStartPositionsRef = useRef<Map<string, Position>>(new Map());
+  const draggingObjectRef = useRef<{ id: string; type: 'card' | 'sticker' } | null>(null);
+  const lastDragDeltaRef = useRef<Position | null>(null);
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -300,61 +301,102 @@ const App: React.FC = () => {
     addCard();
   }, [addCard, showToast, t]);
 
-  // 카드 위치 업데이트 (멀티 선택 지원)
-  const updateItemPosition = useCallback((id: number, position: Position, delta?: Position) => {
-    if (delta && selectedCards.has(id) && (selectedCards.size > 1 || selectedStickers.size > 0)) {
-      if (draggingObjectRef.current === null) {
-        draggingObjectRef.current = id;
-        cards.forEach(item => {
-          if (selectedCards.has(item.id)) {
-            dragStartPositionsRef.current.set(item.id, { ...item.position });
-          }
-        });
-        stickerInstances.forEach(si => {
-          if (selectedStickers.has(si.id)) {
-            dragStartPositionsRef.current.set(si.id, { ...si.position });
-          }
-        });
-      }
+  // 카드 및 스티커 위치 업데이트 (통합 핸들러)
+  const handleObjectPositionChange = useCallback((
+    id: string,
+    type: 'card' | 'sticker',
+    position: Position,
+    delta?: Position
+  ) => {
+    const isMultiSelect = selectedCards.size > 1 || selectedStickers.size > 1 || (selectedCards.size > 0 && selectedStickers.size > 0);
 
-      const updatedCards = cards.map(item => {
-        if (item.id === id) {
-          return { ...item, position };
-        } else if (selectedCards.has(item.id)) {
-          const startPos = dragStartPositionsRef.current.get(item.id);
-          if (startPos) {
-            return {
-              ...item,
-              position: PositionUtils.add(startPos, delta),
-            };
-          }
+    // 드래그 시작: 다중 선택 상태일 때, 시작 위치 저장
+    if (delta && isMultiSelect && !draggingObjectRef.current) {
+      draggingObjectRef.current = { id, type };
+      dragStartPositionsRef.current.clear();
+      cards.forEach(item => {
+        if (selectedCards.has(item.id)) {
+          dragStartPositionsRef.current.set(`card-${item.id}`, { ...item.position });
         }
-        return item;
       });
+      stickerInstances.forEach(si => {
+        if (selectedStickers.has(si.id)) {
+          dragStartPositionsRef.current.set(`sticker-${si.id}`, { ...si.position });
+        }
+      });
+    }
 
-      setCards(updatedCards);
+    // 드래그 중: 실시간 위치 업데이트
+    if (delta) {
+      lastDragDeltaRef.current = delta; // 마지막 델타 저장
+      if (isMultiSelect) {
+        // 다중 선택 드래그
+        const updatedCards = cards.map(item => {
+          const startPos = dragStartPositionsRef.current.get(`card-${item.id}`);
+          if (startPos) {
+            return { ...item, position: PositionUtils.add(startPos, delta) };
+          }
+          return item;
+        });
+        setCards(updatedCards);
 
-      if (selectedStickers.size > 0) {
         const updatedInstances = stickerInstances.map(si => {
-          if (selectedStickers.has(si.id)) {
-            const startPos = dragStartPositionsRef.current.get(si.id);
-            if (startPos) {
-              return {
-                ...si,
-                position: PositionUtils.add(startPos, delta),
-              };
-            }
+          const startPos = dragStartPositionsRef.current.get(`sticker-${si.id}`);
+          if (startPos) {
+            return { ...si, position: PositionUtils.add(startPos, delta) };
           }
           return si;
         });
         setInstances(updatedInstances);
+      } else {
+        // 단일 선택 드래그
+        if (type === 'card') {
+          updateCard(Number(id), { position });
+        } else {
+          updateInstance(id, { position });
+        }
       }
-    } else {
-      updateCard(id, { position });
-      dragStartPositionsRef.current.clear();
-      draggingObjectRef.current = null;
     }
-  }, [cards, stickerInstances, selectedCards, selectedStickers, updateCard, setCards, setInstances]);
+    // 드래그 종료
+    else {
+      // 다중 드래그 세션이었는지 확인
+      if (draggingObjectRef.current) {
+        const finalDelta = lastDragDeltaRef.current;
+        if (finalDelta) {
+          const updatedCards = cards.map(item => {
+            const startPos = dragStartPositionsRef.current.get(`card-${item.id}`);
+            if (startPos) {
+              return { ...item, position: PositionUtils.add(startPos, finalDelta) };
+            }
+            return item;
+          });
+          setCards(updatedCards);
+
+          const updatedInstances = stickerInstances.map(si => {
+            const startPos = dragStartPositionsRef.current.get(`sticker-${si.id}`);
+            if (startPos) {
+              return { ...si, position: PositionUtils.add(startPos, finalDelta) };
+            }
+            return si;
+          });
+          setInstances(updatedInstances);
+        }
+      } else {
+        // 단일 드래그 종료
+        if (type === 'card') {
+          updateCard(Number(id), { position });
+        } else {
+          updateInstance(id, { position });
+        }
+      }
+
+      // 드래그 상태 초기화
+      draggingObjectRef.current = null;
+      dragStartPositionsRef.current.clear();
+      lastDragDeltaRef.current = null;
+    }
+  }, [cards, stickerInstances, selectedCards, selectedStickers, updateCard, setCards, updateInstance, setInstances]);
+
 
   // URL 입력 핸들러
   const handleRequestUrlInput = useCallback((id: number) => {
@@ -499,55 +541,6 @@ const App: React.FC = () => {
     setDragGhostPosition({ x: e.clientX, y: e.clientY });
   }, [setDraggingSticker, setDragGhostPosition]);
 
-  const handleStickerPositionChange = useCallback((id: string, position: Position, delta?: Position) => {
-    if (delta && selectedStickers.has(id) && (selectedStickers.size > 1 || selectedCards.size > 0)) {
-      if (draggingObjectRef.current === null) {
-        draggingObjectRef.current = id;
-        stickerInstances.forEach(si => {
-          if (selectedStickers.has(si.id)) {
-            dragStartPositionsRef.current.set(si.id, { ...si.position });
-          }
-        });
-        cards.forEach(item => {
-          if (selectedCards.has(item.id)) {
-            dragStartPositionsRef.current.set(item.id, { ...item.position });
-          }
-        });
-      }
-
-      const updatedInstances = stickerInstances.map(si => {
-        if (si.id === id) {
-          return { ...si, position };
-        } else if (selectedStickers.has(si.id)) {
-          const startPos = dragStartPositionsRef.current.get(si.id);
-          if (startPos) {
-            return { ...si, position: PositionUtils.add(startPos, delta) };
-          }
-        }
-        return si;
-      });
-
-      setInstances(updatedInstances);
-
-      if (selectedCards.size > 0) {
-        const updatedCards = cards.map(item => {
-          if (selectedCards.has(item.id)) {
-            const startPos = dragStartPositionsRef.current.get(item.id);
-            if (startPos) {
-              return { ...item, position: PositionUtils.add(startPos, delta) };
-            }
-          }
-          return item;
-        });
-        setCards(updatedCards);
-      }
-    } else {
-      updateInstance(id, { position });
-      dragStartPositionsRef.current.clear();
-      draggingObjectRef.current = null;
-    }
-  }, [stickerInstances, cards, selectedStickers, selectedCards, updateInstance, setInstances, setCards]);
-
   // 드래그 앤 드롭 (팔레트에서 캔버스로)
   useEffect(() => {
     if (!draggingSticker) return;
@@ -586,7 +579,7 @@ const App: React.FC = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [draggingSticker, stickerInstances, addInstance, setDraggingSticker, setDragGhostPosition]);
+  }, [draggingSticker, addInstance, setDraggingSticker, setDragGhostPosition]);
 
   // 드래그 박스 선택
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
@@ -701,11 +694,12 @@ const App: React.FC = () => {
       )}
 
       {/* 카드들 */}
-      {cards.map((item) => (
+      {cards.map((item, index) => (
         <CardComponent
           key={item.id}
           item={item}
-          onPositionChange={updateItemPosition}
+          index={index}
+          onPositionChange={(id, pos, delta) => handleObjectPositionChange(String(id), 'card', pos, delta)}
           onTextChange={(id, text) => updateCard(id, { text })}
           onImageChange={(id, imageUrl) => updateCard(id, { imageUrl })}
           onImageSizeChange={(id, width, height) => updateCard(id, { imageWidth: width, imageHeight: height })}
@@ -721,11 +715,12 @@ const App: React.FC = () => {
       ))}
 
       {/* 스티커들 */}
-      {stickerInstances.map((sticker) => (
+      {stickerInstances.map((sticker, index) => (
         <StickerObject
           key={sticker.id}
           sticker={sticker}
-          onPositionChange={handleStickerPositionChange}
+          index={index}
+          onPositionChange={(id, pos, delta) => handleObjectPositionChange(id, 'sticker', pos, delta)}
           onSizeChange={(id, size) => updateInstance(id, { size })}
           onDelete={deleteInstance}
           onBringToFront={bringInstanceToFront}
