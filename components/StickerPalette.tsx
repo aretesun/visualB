@@ -79,7 +79,19 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
           {/* 백그라운드 오버레이 */}
           <div
             className="fixed inset-0 bg-transparent z-29"
-            onClick={onToggle}
+            onClick={(e) => {
+              // 스티커나 카드 클릭은 무시 (통과)
+              const target = e.target as HTMLElement;
+              if (target.closest('[data-object="sticker"]') || target.closest('[data-object="card"]')) {
+                return;
+              }
+              // 팔레트 자체 클릭도 무시
+              if (target.closest('.fixed.left-0.top-0')) {
+                return;
+              }
+              // 백그라운드 클릭만 팔레트 닫기
+              onToggle();
+            }}
             aria-label="Close palette"
           />
           <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-30">
