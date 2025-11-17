@@ -82,6 +82,7 @@ const App: React.FC = () => {
   const draggingObjectRef = useRef<{ id: string; type: 'card' | 'sticker' } | null>(null);
   const lastDragDeltaRef = useRef<Position | null>(null);
   const stickerDroppedRef = useRef<boolean>(false); // 스티커 드롭 플래그
+  const rafIdRef = useRef<number | null>(null); // RAF ID를 컴포넌트 레벨로 이동
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -538,44 +539,47 @@ const App: React.FC = () => {
 
   // 스티커 핸들러
   const handleStickerDragStart = useCallback((sticker: Sticker, e: React.MouseEvent) => {
+    console.log('🟡 Drag start for', sticker.id, '- resetting dropped flag to false');
+    stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
+
     setDraggingSticker(sticker);
     setDragGhostPosition({ x: e.clientX, y: e.clientY });
-  }, [setDraggingSticker, setDragGhostPosition]);
 
-  // 드래그 앤 드롭 (팔레트에서 캔버스로)
-  useEffect(() => {
-    if (!draggingSticker) {
-      stickerDroppedRef.current = false; // 드래그 종료 시 플래그 초기화
-      return;
-    }
-
-    let rafId: number | null = null; // requestAnimationFrame ID
-
+    // 이전 리스너가 있다면 제거 (안전장치)
     const handleMouseMove = (e: MouseEvent) => {
       // requestAnimationFrame으로 성능 최적화 및 호출 빈도 제한
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
       }
 
-      rafId = requestAnimationFrame(() => {
+      rafIdRef.current = requestAnimationFrame(() => {
         setDragGhostPosition({ x: e.clientX, y: e.clientY });
-        rafId = null;
+        rafIdRef.current = null;
       });
     };
 
     const handleMouseUp = (e: MouseEvent) => {
+      console.log('🔵 mouseup fired, dropped flag:', stickerDroppedRef.current);
+
+      // RAF 클린업
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+
+      // 리스너 즉시 제거 (중복 실행 방지)
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+
       // 최신 상태 확인 (클로저 문제 방지)
       const currentDraggingSticker = useStickerStore.getState().draggingSticker;
 
       // 중복 실행 방지
       if (stickerDroppedRef.current || !currentDraggingSticker || !canvasRef.current) {
+        console.log('🔴 Early return - dropped:', stickerDroppedRef.current, 'dragging:', !!currentDraggingSticker, 'canvas:', !!canvasRef.current);
+        setDraggingSticker(null);
+        setDragGhostPosition(null);
         return;
-      }
-
-      // RAF 클린업
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
       }
 
       const canvasRect = canvasRef.current.getBoundingClientRect();
@@ -584,6 +588,7 @@ const App: React.FC = () => {
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
         stickerDroppedRef.current = true; // 드롭 완료 표시
+        console.log('✅ Creating sticker instance, setting dropped flag to true');
         const newInstance: StickerInstance = {
           id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           stickerId: currentDraggingSticker.id,
@@ -593,28 +598,19 @@ const App: React.FC = () => {
           zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
         };
         addInstance(newInstance);
+      } else {
+        console.log('❌ Drop outside canvas');
       }
 
       setDraggingSticker(null);
       setDragGhostPosition(null);
     };
 
-    // once 옵션으로 자동 제거 보장
+    // 리스너 등록
+    console.log('🟢 Registering event listeners for', sticker.id);
     document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp, { once: true });
-
-    return () => {
-      // RAF 클린업
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-      document.removeEventListener('mousemove', handleMouseMove);
-      // mouseup은 once 옵션으로 이미 제거되었을 수 있음
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    // Zustand actions는 안정적이므로 dependencies에서 제외
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draggingSticker]);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [setDraggingSticker, setDragGhostPosition, addInstance]);
 
   // 드래그 박스 선택
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
