@@ -793,14 +793,14 @@ const App: React.FC = () => {
       clearSelection();
     }
 
-    // 바탕 클릭 시 빈 카드 정리 (isNew 상관없이 빈 카드는 삭제)
-    const emptyCards = cards.filter(card => !card.text && !card.imageUrl);
-    console.log('🔍 Background clicked. Empty cards:', emptyCards.length, emptyCards);
-    emptyCards.forEach(card => {
-      console.log('🗑️ Deleting empty card:', card.id);
-      deleteCard(card.id);
+    // 바탕 클릭 시 빈 새 카드의 isNew 플래그 해제 (자동 삭제 로직이 처리)
+    const emptyNewCards = cards.filter(card => card.isNew && !card.text && !card.imageUrl);
+    console.log('🔍 Background clicked. Clearing isNew for:', emptyNewCards.length, 'cards');
+    emptyNewCards.forEach(card => {
+      console.log('🔄 Clearing isNew flag for card:', card.id);
+      updateCard(card.id, { isNew: false });
     });
-  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection, cards, deleteCard]);
+  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection, cards, updateCard]);
 
   useEffect(() => {
     if (!isSelecting) return;
