@@ -99,7 +99,7 @@ const App: React.FC = () => {
   // 설정 메뉴 상태 (외부에서 제어)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
-  const [currentBackground, setCurrentBackground] = useState<string>(getCurrentBackground() || '');
+  const [currentBackground, setCurrentBackground] = useState<string>('');
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -268,9 +268,8 @@ const App: React.FC = () => {
   useEffect(() => {
     // 배경 설정이 변경될 때마다 업데이트
     const newBackground = getCurrentBackground();
-    if (newBackground) {
-      setCurrentBackground(newBackground);
-    }
+    console.log('🖼️ Background update:', { source, customMode, newBackground });
+    setCurrentBackground(newBackground || '');
   }, [source, customMode, selectedSingleId, randomBackgroundIds, customBackgrounds, getCurrentBackground]);
 
   // 타이머 기반 배경 랜덤 순환
@@ -333,6 +332,23 @@ const App: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [viewport, isSharedView, cards, setCards, setViewport]);
+
+  // 배경 새로고침 핸들러
+  const handleRefreshBackground = useCallback(() => {
+    if (source === 'system') {
+      // 시스템 배경: Unsplash URL에 타임스탬프 추가하여 강제 새로고침
+      const timestamp = Date.now();
+      const newBackground = `https://source.unsplash.com/random/1920x1080?${timestamp}`;
+      setCurrentBackground(newBackground);
+    } else if (source === 'custom' && customMode === 'random' && randomBackgroundIds.length > 0) {
+      // 커스텀 배경 랜덤 모드: 새로운 랜덤 이미지 선택
+      const newBackground = getCurrentBackground();
+      if (newBackground) {
+        setCurrentBackground(newBackground);
+      }
+    }
+    // 커스텀 단일 모드는 새로고침 불필요 (동일한 이미지가 계속 표시됨)
+  }, [source, customMode, randomBackgroundIds, getCurrentBackground]);
 
   // 카드 추가 핸들러
   const handleAddCard = useCallback(() => {
@@ -875,7 +891,7 @@ const App: React.FC = () => {
       )}
 
       <Toolbar
-        onRefreshBackground={refreshBackground}
+        onRefreshBackground={handleRefreshBackground}
         onShareClick={openShareModal}
         isSharedView={isSharedView}
       />
