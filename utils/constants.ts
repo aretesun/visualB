@@ -32,16 +32,17 @@ export const CONSTANTS = {
   // 터치 타겟 (모바일 최적화)
   MIN_TOUCH_TARGET: 44,
 
-  // z-index 계층 구조
+  // z-index 계층 구조 (낮은 순서 -> 높은 순서)
   Z_INDEX: {
-    CARD_BASE: 10,              // 카드 기본
-    CARD_DRAGGING: 50,          // 카드 드래그 중
-    STICKER_BASE: 20,           // 스티커 기본 (카드보다 위)
-    STICKER_MAX: 29,            // 스티커 최대값 (UI 요소보다 아래)
-    STICKER_DRAGGING: 50,       // 스티커 드래그 중
-    TOOLBAR: 30,                // 툴바
-    NOTIFICATION: 40,           // 알림, 팔레트
-    MENU: 50,                   // 메뉴
+    CARD_BASE: 10,              // 카드 기본 (10~19)
+    STICKER_BASE: 20,           // 스티커 기본 (20~29, 카드보다 위)
+    STICKER_MAX: 29,            // 스티커 최대값
+    TOOLBAR: 30,                // 상단 툴바
+    NOTIFICATION: 35,           // 공유 보기 알림
+    UI_ELEMENTS: 40,            // 고정 UI 요소 (팔레트, 설정, 카드 추가 버튼)
+    CARD_DRAGGING: 45,          // 카드 드래그 중 (고정 UI보다 위)
+    STICKER_DRAGGING: 45,       // 스티커 드래그 중 (고정 UI보다 위)
+    DRAG_GHOST: 50,             // 드래그 고스트 이미지
     MODAL: 60,                  // 모달 (최상위)
   } as const,
 

@@ -652,7 +652,7 @@ const App: React.FC = () => {
           imageUrl: currentDraggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
           size: { width: 80, height: 80 },
-          zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
+          zIndex: CONSTANTS.Z_INDEX.STICKER_DRAGGING,
         };
         addInstance(newInstance);
       } else {
@@ -791,7 +791,10 @@ const App: React.FC = () => {
 
       {/* 공유 보기 모드 알림 */}
       {isSharedView && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-30 bg-blue-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2">
+        <div
+          className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-blue-500/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-lg flex items-center space-x-2"
+          style={{ zIndex: CONSTANTS.Z_INDEX.NOTIFICATION }}
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -855,7 +858,7 @@ const App: React.FC = () => {
       {/* 드래그 중인 고스트 이미지 */}
       {draggingSticker && dragGhostPosition && (
         <div
-          className="fixed pointer-events-none z-50 animate-pulse"
+          className="fixed pointer-events-none animate-pulse"
           style={{
             left: `${dragGhostPosition.x - 40}px`,
             top: `${dragGhostPosition.y - 40}px`,
@@ -864,6 +867,7 @@ const App: React.FC = () => {
             opacity: 0.8,
             transform: 'scale(1.1)',
             filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.3))',
+            zIndex: CONSTANTS.Z_INDEX.DRAG_GHOST,
           }}
         >
           <img

@@ -113,7 +113,7 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
       {!isExpanded && (
         <button
           onClick={onToggle}
-          className="fixed left-4 top-4 p-3 bg-white/20 backdrop-blur-md text-white hover:bg-white/30 rounded-full transition-colors shadow-lg z-30 text-xl"
+          className="fixed left-4 top-4 p-3 bg-white/20 backdrop-blur-md text-white hover:bg-white/30 rounded-full transition-colors shadow-lg z-40 text-xl"
           aria-label="Open sticker palette"
           title={t.stickerPalette?.open || 'Open Stickers'}
         >
@@ -123,7 +123,7 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
 
       {/* 펼쳐진 상태 - 사이드바 */}
       {isExpanded && (
-        <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-30">
+        <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-40">
           <div className="h-full flex flex-col">
             {/* 헤더 */}
             <div className="flex items-center justify-between p-4 border-b border-white/20 select-none">
