@@ -794,7 +794,10 @@ const App: React.FC = () => {
     }
 
     // 바탕 클릭 시 빈 새 카드 정리
-    cards.filter(card => card.isNew && !card.text && !card.imageUrl).forEach(card => {
+    const emptyNewCards = cards.filter(card => card.isNew && !card.text && !card.imageUrl);
+    console.log('🔍 Background clicked. Empty new cards:', emptyNewCards.length, emptyNewCards);
+    emptyNewCards.forEach(card => {
+      console.log('🗑️ Clearing isNew flag for card:', card.id);
       updateCard(card.id, { isNew: false });
     });
   }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection, cards, updateCard]);
