@@ -246,47 +246,6 @@ const Card: React.FC<CardProps> = ({
     setShowDropdown(false);
   };
 
-  const handleCopyImageUrl = async () => {
-    if (!item.imageUrl) return;
-
-    try {
-      // base64 이미지인 경우 확인
-      const isBase64 = item.imageUrl.startsWith('data:');
-
-      if (isBase64) {
-        // base64는 너무 길어서 경고
-        const shouldCopy = window.confirm('Base64 이미지는 매우 긴 텍스트입니다. 복사하시겠습니까?\n\n웹 URL 이미지로 변경하는 것을 권장합니다.');
-        if (!shouldCopy) return;
-      }
-
-      await navigator.clipboard.writeText(item.imageUrl);
-
-      // 성공 피드백 (간단한 알림)
-      const notification = document.createElement('div');
-      notification.textContent = '✓ 이미지 URL 복사됨';
-      notification.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(34, 197, 94, 0.9);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-size: 14px;
-        z-index: 10000;
-        pointer-events: none;
-      `;
-      document.body.appendChild(notification);
-      setTimeout(() => {
-        notification.remove();
-      }, 2000);
-    } catch (error) {
-      console.error('Failed to copy image URL:', error);
-      alert('이미지 URL 복사에 실패했습니다.');
-    }
-  };
-
   // 카드 리사이즈 핸들러
   const handleResizeStart = (e: React.MouseEvent | React.PointerEvent, direction: ResizeHandle) => {
     e.preventDefault();
@@ -482,14 +441,12 @@ const Card: React.FC<CardProps> = ({
         isEditingImage={isEditingImage}
         isImageLocked={isImageLocked}
         isReadOnly={isReadOnly}
-        imageUrl={item.imageUrl}
         onToggleLock={() => setIsImageLocked(!isImageLocked)}
         onEditText={() => setIsEditingText(true)}
         onSaveText={() => setIsEditingText(false)}
         onEditImage={handleEditImage}
         onCloseEditImage={handleCloseEditImage}
         onDelete={() => onDelete(item.id)}
-        onCopyImageUrl={handleCopyImageUrl}
         editImageButtonRef={editImageButtonRef}
       />
 

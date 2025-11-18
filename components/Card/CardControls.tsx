@@ -8,14 +8,12 @@ interface CardControlsProps {
   isEditingImage: boolean;
   isImageLocked: boolean;
   isReadOnly: boolean;
-  imageUrl?: string;
   onToggleLock: () => void;
   onEditText: () => void;
   onSaveText: () => void;
   onEditImage: () => void;
   onCloseEditImage: () => void;
   onDelete: () => void;
-  onCopyImageUrl?: () => void;
   editImageButtonRef?: React.RefObject<HTMLButtonElement>;
 }
 
@@ -30,38 +28,18 @@ const CardControls: React.FC<CardControlsProps> = ({
   isEditingImage,
   isImageLocked,
   isReadOnly,
-  imageUrl,
   onToggleLock,
   onEditText,
   onSaveText,
   onEditImage,
   onCloseEditImage,
   onDelete,
-  onCopyImageUrl,
   editImageButtonRef,
 }) => {
   if (isReadOnly) return null;
 
   return (
     <div className="absolute bottom-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 [@media(hover:none)]:touch-none transition-opacity duration-200 z-20">
-      {/* 이미지 URL 복사 버튼 */}
-      {hasImage && imageUrl && onCopyImageUrl && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onCopyImageUrl();
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="p-2.5 sm:p-2 bg-purple-500/80 hover:bg-purple-500 rounded-md shadow-lg touch-manipulation"
-          aria-label="Copy image URL"
-          title="이미지 URL 복사"
-        >
-          <svg className="w-5 h-5 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-        </button>
-      )}
-
       {/* 이미지 위치 잠금/해제 버튼 */}
       {hasImage && (
         <button
