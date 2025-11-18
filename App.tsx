@@ -336,10 +336,11 @@ const App: React.FC = () => {
   // 배경 새로고침 핸들러
   const handleRefreshBackground = useCallback(() => {
     if (source === 'system') {
-      // 시스템 배경: Unsplash URL에 타임스탬프 추가하여 강제 새로고침
-      const timestamp = Date.now();
-      const newBackground = `https://source.unsplash.com/random/1920x1080?${timestamp}`;
-      setCurrentBackground(newBackground);
+      // 시스템 배경: getCurrentBackground()가 타임스탬프를 추가하므로 호출만 하면 됨
+      const newBackground = getCurrentBackground();
+      if (newBackground) {
+        setCurrentBackground(newBackground);
+      }
     } else if (source === 'custom' && customMode === 'random' && randomBackgroundIds.length > 0) {
       // 커스텀 배경 랜덤 모드: 새로운 랜덤 이미지 선택
       const newBackground = getCurrentBackground();

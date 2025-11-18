@@ -31,7 +31,8 @@ interface BackgroundStore extends BackgroundSettings {
   getCurrentBackground: () => string | null;
 }
 
-const DEFAULT_UNSPLASH_URL = 'https://source.unsplash.com/random/1920x1080';
+// Picsum Photos - 무료 랜덤 이미지 서비스 (Unsplash Source API는 deprecated됨)
+const DEFAULT_BACKGROUND_URL = 'https://picsum.photos/1920/1080';
 
 export const useBackgroundStore = create<BackgroundStore>()(
   persist(
@@ -102,13 +103,14 @@ export const useBackgroundStore = create<BackgroundStore>()(
 
         // System background
         if (state.source === 'system') {
-          return DEFAULT_UNSPLASH_URL;
+          // 타임스탬프를 추가하여 매번 다른 이미지가 로드되도록 함
+          return `${DEFAULT_BACKGROUND_URL}?random=${Date.now()}`;
         }
 
         // Custom background
         if (state.customMode === 'single' && state.selectedSingleId) {
           const bg = state.customBackgrounds.find((bg) => bg.id === state.selectedSingleId);
-          return bg?.imageUrl || DEFAULT_UNSPLASH_URL;
+          return bg?.imageUrl || `${DEFAULT_BACKGROUND_URL}?random=${Date.now()}`;
         }
 
         // Random mode
@@ -123,7 +125,7 @@ export const useBackgroundStore = create<BackgroundStore>()(
         }
 
         // Fallback
-        return DEFAULT_UNSPLASH_URL;
+        return `${DEFAULT_BACKGROUND_URL}?random=${Date.now()}`;
       },
     }),
     {
