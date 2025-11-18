@@ -75,6 +75,7 @@ const Card: React.FC<CardProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [isImageLocked, setIsImageLocked] = useState(true);
+  const hasEditedRef = useRef(false); // 편집을 시작한 적이 있는지 추적
 
   const isEmpty = !item.text && !item.imageUrl;
 
@@ -85,6 +86,7 @@ const Card: React.FC<CardProps> = ({
   useEffect(() => {
     if (item.isNew && !isMobile && isEmpty) {
       setIsEditingText(true);
+      hasEditedRef.current = true; // 편집 모드 진입 표시
     }
   }, [item.isNew, isMobile, isEmpty]);
 
@@ -96,9 +98,10 @@ const Card: React.FC<CardProps> = ({
   }, [item.isNew, isEmpty, onUpdate, item.id]);
 
   // 편집 모드 종료 시 빈 카드면 isNew 플래그 해제하여 삭제 준비
+  // 단, 실제로 편집을 시작한 적이 있어야 함 (hasEditedRef.current === true)
   useEffect(() => {
-    if (item.isNew && !isEditingText && isEmpty && onUpdate) {
-      console.log('🔄 Card', item.id, ': Edit mode ended, clearing isNew flag');
+    if (item.isNew && !isEditingText && isEmpty && onUpdate && hasEditedRef.current) {
+      console.log('🔄 Card', item.id, ': Edit mode ended (after editing), clearing isNew flag');
       onUpdate(item.id, { isNew: false });
     }
   }, [item.isNew, isEditingText, isEmpty, onUpdate, item.id]);
@@ -445,6 +448,7 @@ const Card: React.FC<CardProps> = ({
         onTextChange={(text) => onTextChange(item.id, text)}
         onEditStart={() => {
           console.log('📝 Card', item.id, ': onEditStart called, setting isEditingText to true');
+          hasEditedRef.current = true; // 편집 시작 표시
           setIsEditingText(true);
           setShowDropdown(false); // 텍스트 편집 시작 시 이미지 옵션창 닫기
         }}
