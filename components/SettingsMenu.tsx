@@ -9,9 +9,10 @@ interface SettingsMenuProps {
   onShowToast: (message: string) => void;
   isOpen?: boolean;
   onToggle?: () => void;
+  onOpenBackgroundSettings?: () => void;
 }
 
-const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToast, isOpen: externalIsOpen, onToggle }) => {
+const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToast, isOpen: externalIsOpen, onToggle, onOpenBackgroundSettings }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
 
   // 외부에서 제어하는 경우 외부 상태 사용, 아니면 내부 상태 사용
@@ -113,6 +114,22 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
               </svg>
               <span className="text-sm font-medium">{t.settings.restore}</span>
             </button>
+
+            {/* 배경 설정 */}
+            {onOpenBackgroundSettings && (
+              <button
+                onClick={() => {
+                  onOpenBackgroundSettings();
+                  closeMenu();
+                }}
+                className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-colors text-left"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-medium">{t.settings.background || '배경 설정'}</span>
+              </button>
+            )}
 
             {/* 언어 선택 */}
             <div className="border-t border-white/20 pt-2 mt-2">
