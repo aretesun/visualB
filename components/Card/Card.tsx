@@ -138,6 +138,24 @@ const Card: React.FC<CardProps> = ({
     }
   };
 
+  // 바탕 클릭 감지 (카드 외부 클릭)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (itemRef.current && !itemRef.current.contains(event.target as Node)) {
+        // 카드 외부 클릭 시, 빈 새 카드면 isNew 해제
+        if (item.isNew && !item.text && !item.imageUrl && !isEditingText && onUpdate) {
+          console.log('🌍 Card', item.id, ': Clicked outside, clearing isNew');
+          onUpdate(item.id, { isNew: false });
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [item.id, item.isNew, item.text, item.imageUrl, isEditingText, onUpdate]);
+
   const handleClick = (e: React.MouseEvent) => {
     if (onSelect) {
       const isCtrlPressed = e.ctrlKey || e.metaKey;

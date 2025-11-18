@@ -792,15 +792,7 @@ const App: React.FC = () => {
     if (!e.ctrlKey && !e.metaKey) {
       clearSelection();
     }
-
-    // 바탕 클릭 시 빈 새 카드의 isNew 플래그 해제 (자동 삭제 로직이 처리)
-    const emptyNewCards = cards.filter(card => card.isNew && !card.text && !card.imageUrl);
-    console.log('🔍 Background clicked. Clearing isNew for:', emptyNewCards.length, 'cards');
-    emptyNewCards.forEach(card => {
-      console.log('🔄 Clearing isNew flag for card:', card.id);
-      updateCard(card.id, { isNew: false });
-    });
-  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection, cards, updateCard]);
+  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
 
   useEffect(() => {
     if (!isSelecting) return;
