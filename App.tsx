@@ -266,11 +266,12 @@ const App: React.FC = () => {
 
   // 배경 이미지 관리
   useEffect(() => {
-    // 배경 설정이 변경될 때마다 업데이트
+    // 배경 설정이 변경될 때만 업데이트
     const newBackground = getCurrentBackground();
-    console.log('🖼️ Background update:', { source, customMode, newBackground });
     setCurrentBackground(newBackground || '');
-  }, [source, customMode, selectedSingleId, randomBackgroundIds, customBackgrounds, getCurrentBackground]);
+    // getCurrentBackground는 Zustand selector이므로 의존성에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source, customMode, selectedSingleId, randomBackgroundIds, customBackgrounds]);
 
   // 타이머 기반 배경 랜덤 순환
   useEffect(() => {
