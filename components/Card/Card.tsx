@@ -106,6 +106,7 @@ const Card: React.FC<CardProps> = ({
   // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
   // 단, isNew 플래그가 true이면 삭제하지 않음 (새로 생성된 카드 보호)
   useEffect(() => {
+    const shouldDelete = !item.isNew && !isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen;
     console.log('🧐 Card', item.id, 'delete check:', {
       isNew: item.isNew,
       isEditingText,
@@ -113,10 +114,11 @@ const Card: React.FC<CardProps> = ({
       hasImage: !!item.imageUrl,
       isSelectingFile,
       showDropdown,
-      isUrlModalOpen
+      isUrlModalOpen,
+      '→ shouldDelete': shouldDelete
     });
-    if (!item.isNew && !isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen) {
-      console.log('❌ Deleting card:', item.id);
+    if (shouldDelete) {
+      console.log('❌ DELETING CARD:', item.id);
       onDelete(item.id);
     }
   }, [item.isNew, isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
@@ -442,6 +444,7 @@ const Card: React.FC<CardProps> = ({
         hasImage={!!item.imageUrl}
         onTextChange={(text) => onTextChange(item.id, text)}
         onEditStart={() => {
+          console.log('📝 Card', item.id, ': onEditStart called, setting isEditingText to true');
           setIsEditingText(true);
           setShowDropdown(false); // 텍스트 편집 시작 시 이미지 옵션창 닫기
         }}
