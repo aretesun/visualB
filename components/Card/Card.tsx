@@ -422,7 +422,10 @@ const Card: React.FC<CardProps> = ({
         isEditing={isEditingText}
         hasImage={!!item.imageUrl}
         onTextChange={(text) => onTextChange(item.id, text)}
-        onEditStart={() => setIsEditingText(true)}
+        onEditStart={() => {
+          setIsEditingText(true);
+          setShowDropdown(false); // 텍스트 편집 시작 시 이미지 옵션창 닫기
+        }}
         onEditEnd={() => setIsEditingText(false)}
         onDelete={() => onDelete(item.id)}
       />
