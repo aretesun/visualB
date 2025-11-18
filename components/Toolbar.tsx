@@ -34,8 +34,15 @@ const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, is
         <>
           <button
             onClick={handleRefresh}
+            onTouchEnd={(e) => {
+              if (isRefreshing) return;
+              e.preventDefault();
+              e.stopPropagation();
+              handleRefresh();
+            }}
             disabled={isRefreshing}
             className="group relative p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+            style={{ touchAction: 'none' }}
             aria-label="Refresh background"
           >
             <RefreshCwIcon
@@ -50,7 +57,13 @@ const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, is
           </button>
           <button
             onClick={onShareClick}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onShareClick();
+            }}
             className="group relative p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
+            style={{ touchAction: 'none' }}
             aria-label="Share board"
           >
             <ShareIcon className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
