@@ -1,0 +1,22 @@
+name = "vision-board-api"
+main = "worker.js"
+compatibility_date = "2024-11-05"
+
+# KV Namespace 바인딩
+# 배포 후 Cloudflare 대시보드에서 KV 네임스페이스를 생성하고 ID를 입력하세요
+[[kv_namespaces]]
+binding = "VISION_BOARD_KV"
+id = "59e218bfc1bc4271839ca17a60a4e4ad"
+
+# Workers 라우트 설정
+# routes = [
+#   { pattern = "vision-board.example.com/*", zone_name = "example.com" }
+# ]
+
+# 개발 환경 설정
+[env.dev]
+name = "vision-board-api-dev"
+
+[[env.dev.kv_namespaces]]
+binding = "VISION_BOARD_KV"
+id = "YOUR_DEV_KV_NAMESPACE_ID"  # 개발용 KV ID
