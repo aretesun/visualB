@@ -14,6 +14,7 @@ import BackgroundSettingsModal from './components/BackgroundSettingsModal';
 import { useLanguage } from './contexts/LanguageContext';
 import { useCanvasStore, useStickerStore, useSelectionStore, useUIStore } from './store/useStore';
 import { useBackgroundStore } from './store/useBackgroundStore';
+import { useZoomPan } from './hooks/useZoomPan';
 import { CONSTANTS } from './utils/constants';
 import { PositionUtils } from './utils/positionUtils';
 import santaImage from './sticker/santa.png';
@@ -101,6 +102,16 @@ const App: React.FC = () => {
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<string>('');
 
+  // 공유 보기 전용 state (localStorage에 저장하지 않음)
+  const [sharedCards, setSharedCards] = useState<Card[]>([]);
+
+  // 줌/팬 기능 (모바일 뷰포트 대응)
+  const { transform, isPanning, reset: resetZoom, handlers: zoomHandlers } = useZoomPan({
+    minScale: 0.3,
+    maxScale: 3,
+    initialScale: 1,
+  });
+
   // 초기 데이터 로드
   useEffect(() => {
     const loadInitialData = async () => {
@@ -182,12 +193,8 @@ const App: React.FC = () => {
             if (response.ok) {
               const data = await response.json();
               if (data.success && data.items) {
-                const currentLocal = localStorage.getItem(CONSTANTS.STORAGE_KEYS.CARDS);
-                if (currentLocal) {
-                  sessionStorage.setItem('backupLocalData', currentLocal);
-                }
-
-                setCards(data.items);
+                // 공유 보기용 state에만 저장 (localStorage 덮어쓰지 않음)
+                setSharedCards(data.items);
                 setSharedView(true);
                 showToast(t.toast.sharedBoardLoaded);
                 window.history.replaceState({}, '', window.location.pathname);
@@ -202,14 +209,10 @@ const App: React.FC = () => {
           }
         } else if (legacyData) {
           try {
-            const currentLocal = localStorage.getItem(CONSTANTS.STORAGE_KEYS.CARDS);
-            if (currentLocal) {
-              sessionStorage.setItem('backupLocalData', currentLocal);
-            }
-
             const jsonData = decodeURIComponent(atob(legacyData));
             const sharedItems = JSON.parse(jsonData) as Card[];
-            setCards(sharedItems);
+            // 공유 보기용 state에만 저장 (localStorage 덮어쓰지 않음)
+            setSharedCards(sharedItems);
             setSharedView(true);
             showToast(t.toast.sharedBoardLoaded);
             window.history.replaceState({}, '', window.location.pathname);
@@ -333,6 +336,9 @@ const App: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [viewport, isSharedView, cards, setCards, setViewport]);
+
+  // 표시할 카드 결정 (공유 보기 vs 일반 모드)
+  const displayCards = isSharedView ? sharedCards : cards;
 
   // 배경 새로고침 핸들러
   const handleRefreshBackground = useCallback(() => {
@@ -558,7 +564,7 @@ const App: React.FC = () => {
           const response = await fetch(`${CONSTANTS.WORKER_URL}/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: cards }),
+            body: JSON.stringify({ items: displayCards }),
           });
 
           if (!response.ok) {
@@ -578,7 +584,7 @@ const App: React.FC = () => {
       }
 
       // 레거시 방식
-      const jsonData = JSON.stringify(cards);
+      const jsonData = JSON.stringify(displayCards);
       const base64Data = btoa(encodeURIComponent(jsonData));
       const shareUrl = `${window.location.origin}${window.location.pathname}?data=${base64Data}`;
 
@@ -593,7 +599,7 @@ const App: React.FC = () => {
       console.error('Link share failed:', error);
       showToast(t.toast.linkFailed);
     }
-  }, [cards, showToast, t]);
+  }, [displayCards, showToast, t]);
 
   // 스티커 핸들러
   const handleStickerDragStart = useCallback((sticker: Sticker, e: React.MouseEvent) => {
@@ -669,6 +675,26 @@ const App: React.FC = () => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   }, [setDraggingSticker, setDragGhostPosition, addInstance]);
+
+  // 줌/팬 이벤트 리스너 등록
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const { onWheel, onTouchStart, onTouchMove, onTouchEnd } = zoomHandlers;
+
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onTouchEnd);
+
+    return () => {
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('touchstart', onTouchStart);
+      canvas.removeEventListener('touchmove', onTouchMove);
+      canvas.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [zoomHandlers]);
 
   // 드래그 박스 선택
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
@@ -804,8 +830,39 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* 카드들 */}
-      {cards.map((item, index) => (
+      {/* 줌 리셋 버튼 */}
+      {(transform.scale !== 1 || transform.translateX !== 0 || transform.translateY !== 0) && (
+        <button
+          onClick={resetZoom}
+          className="group fixed bottom-6 left-6 sm:bottom-8 sm:left-8 p-3 bg-white/20 text-white rounded-full shadow-lg backdrop-blur-lg hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 hover:shadow-xl"
+          style={{ zIndex: CONSTANTS.Z_INDEX.UI_ELEMENTS }}
+          aria-label="Reset zoom"
+        >
+          <svg className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+          {/* Tooltip */}
+          <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-black/80 text-white text-sm rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            줌 리셋
+          </span>
+        </button>
+      )}
+
+      {/* 줌/팬 가능한 캔버스 래퍼 */}
+      <div
+        style={{
+          transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
+          transformOrigin: '0 0',
+          transition: isPanning ? 'none' : 'transform 0.2s ease-out',
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+        }}
+      >
+        {/* 카드들 */}
+        {displayCards.map((item, index) => (
         <CardComponent
           key={item.id}
           item={item}
@@ -841,20 +898,21 @@ const App: React.FC = () => {
         />
       ))}
 
-      {/* 선택 박스 */}
-      {isSelecting && selectionStart && selectionEnd &&
-        (Math.abs(selectionEnd.x - selectionStart.x) > 5 ||
-         Math.abs(selectionEnd.y - selectionStart.y) > 5) && (
-        <div
-          className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none"
-          style={{
-            left: `${Math.min(selectionStart.x, selectionEnd.x)}px`,
-            top: `${Math.min(selectionStart.y, selectionEnd.y)}px`,
-            width: `${Math.abs(selectionEnd.x - selectionStart.x)}px`,
-            height: `${Math.abs(selectionEnd.y - selectionStart.y)}px`,
-          }}
-        />
-      )}
+        {/* 선택 박스 */}
+        {isSelecting && selectionStart && selectionEnd &&
+          (Math.abs(selectionEnd.x - selectionStart.x) > 5 ||
+           Math.abs(selectionEnd.y - selectionStart.y) > 5) && (
+          <div
+            className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none"
+            style={{
+              left: `${Math.min(selectionStart.x, selectionEnd.x)}px`,
+              top: `${Math.min(selectionStart.y, selectionEnd.y)}px`,
+              width: `${Math.abs(selectionEnd.x - selectionStart.x)}px`,
+              height: `${Math.abs(selectionEnd.y - selectionStart.y)}px`,
+            }}
+          />
+        )}
+      </div>
 
       {/* 드래그 중인 고스트 이미지 */}
       {draggingSticker && dragGhostPosition && (
@@ -905,7 +963,7 @@ const App: React.FC = () => {
         <>
           <AddCardButton onAddCard={handleAddCard} />
           <SettingsMenu
-            items={cards}
+            items={displayCards}
             onRestore={handleRestore}
             onShowToast={showToast}
             isOpen={isSettingsOpen}
