@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { Card, Position, Sticker, StickerInstance, Size, LegacyCard } from './types';
 import CardComponent from './components/Card';
 import Toolbar from './components/Toolbar';
@@ -10,8 +10,10 @@ import ImageUrlModal from './components/ImageUrlModal';
 import ShareModal from './components/ShareModal';
 import StickerPalette from './components/StickerPalette';
 import StickerObject from './components/StickerObject';
+import BackgroundSettingsModal from './components/BackgroundSettingsModal';
 import { useLanguage } from './contexts/LanguageContext';
 import { useCanvasStore, useStickerStore, useSelectionStore, useUIStore } from './store/useStore';
+import { useBackgroundStore } from './store/useBackgroundStore';
 import { CONSTANTS } from './utils/constants';
 import { PositionUtils } from './utils/positionUtils';
 import santaImage from './sticker/santa.png';
@@ -84,8 +86,17 @@ const App: React.FC = () => {
   const stickerDroppedRef = useRef<boolean>(false); // 스티커 드롭 플래그
   const rafIdRef = useRef<number | null>(null); // RAF ID를 컴포넌트 레벨로 이동
 
+  // 배경 설정 store
+  const getCurrentBackground = useBackgroundStore(state => state.getCurrentBackground);
+  const randomInterval = useBackgroundStore(state => state.randomInterval);
+  const timedIntervalMinutes = useBackgroundStore(state => state.timedIntervalMinutes);
+  const customMode = useBackgroundStore(state => state.customMode);
+  const source = useBackgroundStore(state => state.source);
+
   // 설정 메뉴 상태 (외부에서 제어)
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
+  const [currentBackground, setCurrentBackground] = useState<string>(getCurrentBackground() || '');
 
   // 초기 데이터 로드
   useEffect(() => {
@@ -250,11 +261,34 @@ const App: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 초기 배경 설정
+  // 배경 이미지 관리
   useEffect(() => {
-    refreshBackground();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // 배경 설정이 변경될 때마다 업데이트
+    const newBackground = getCurrentBackground();
+    if (newBackground) {
+      setCurrentBackground(newBackground);
+    }
+  }, [source, customMode, getCurrentBackground]);
+
+  // 타이머 기반 배경 랜덤 순환
+  useEffect(() => {
+    if (
+      source === 'custom' &&
+      customMode === 'random' &&
+      randomInterval === 'timed' &&
+      timedIntervalMinutes > 0
+    ) {
+      const intervalMs = timedIntervalMinutes * 60 * 1000;
+      const timer = setInterval(() => {
+        const newBackground = getCurrentBackground();
+        if (newBackground) {
+          setCurrentBackground(newBackground);
+        }
+      }, intervalMs);
+
+      return () => clearInterval(timer);
+    }
+  }, [source, customMode, randomInterval, timedIntervalMinutes, getCurrentBackground]);
 
   // 브라우저 창 크기 변경 시 카드 위치 자동 조정
   useEffect(() => {
@@ -730,7 +764,7 @@ const App: React.FC = () => {
     <div
       ref={canvasRef}
       className="relative w-screen h-screen overflow-hidden bg-cover bg-center transition-all duration-1000 bg-black"
-      style={{ backgroundImage: `url(${backgroundImage})` }}
+      style={{ backgroundImage: `url(${currentBackground})` }}
       onMouseDown={handleCanvasMouseDown}
     >
       <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
@@ -851,6 +885,7 @@ const App: React.FC = () => {
             onShowToast={showToast}
             isOpen={isSettingsOpen}
             onToggle={() => setIsSettingsOpen(!isSettingsOpen)}
+            onOpenBackgroundSettings={() => setIsBackgroundSettingsOpen(true)}
           />
         </>
       )}
@@ -870,6 +905,12 @@ const App: React.FC = () => {
           onShareAsImage={handleShareAsImage}
           onShareAsFile={() => showToast('파일 공유 기능은 추후 제공 예정입니다')}
           onShareAsLink={handleShareAsLink}
+        />
+      )}
+      {isBackgroundSettingsOpen && (
+        <BackgroundSettingsModal
+          isOpen={isBackgroundSettingsOpen}
+          onClose={() => setIsBackgroundSettingsOpen(false)}
         />
       )}
     </div>
