@@ -78,6 +78,16 @@ const Card: React.FC<CardProps> = ({
 
   const isEmpty = !item.text && !item.imageUrl;
 
+  // 모바일 감지 (터치 디바이스)
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  // 새 카드 생성 시 데스크톱에서는 자동으로 텍스트 편집 모드 진입
+  useEffect(() => {
+    if (item.isNew && !isMobile && isEmpty) {
+      setIsEditingText(true);
+    }
+  }, [item.isNew, isMobile, isEmpty]);
+
   // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
   // 단, isNew 플래그가 true이면 삭제하지 않음 (새로 생성된 카드 보호)
   useEffect(() => {

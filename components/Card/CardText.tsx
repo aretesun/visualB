@@ -28,6 +28,9 @@ const CardText: React.FC<CardTextProps> = ({
   const [editText, setEditText] = useState(text || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // 모바일 감지 (터치 디바이스)
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
   // 편집 모드 진입 시 포커스
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -96,7 +99,8 @@ const CardText: React.FC<CardTextProps> = ({
         >
           {text}
         </p>
-      ) : (
+      ) : isMobile ? (
+        // 모바일: "텍스트 추가" 버튼 표시
         <button
           onClick={onEditStart}
           className="w-full h-12 border-2 border-dashed border-white/30 rounded-md flex items-center justify-center text-white/50 hover:border-white/50 hover:text-white/70 transition-colors"
@@ -106,6 +110,14 @@ const CardText: React.FC<CardTextProps> = ({
           </svg>
           <span className="text-sm">{t.card.addText || '텍스트 추가'}</span>
         </button>
+      ) : (
+        // 데스크톱: 빈 영역 클릭 시 편집 모드
+        <div
+          onClick={onEditStart}
+          className="w-full h-12 flex items-center justify-center text-white/30 hover:text-white/50 cursor-text transition-colors"
+        >
+          <span className="text-sm">{t.card.placeholder || '텍스트를 입력하세요...'}</span>
+        </div>
       )}
     </div>
   );
