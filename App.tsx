@@ -193,6 +193,16 @@ const App: React.FC = () => {
             if (response.ok) {
               const data = await response.json();
               if (data.success && data.items) {
+                // 만료 시간 체크
+                if (data.expiresAt) {
+                  const now = Date.now();
+                  if (now > data.expiresAt) {
+                    showToast('⏰ 공유 링크가 만료되었습니다');
+                    window.history.replaceState({}, '', window.location.pathname);
+                    return;
+                  }
+                }
+
                 // 공유 보기용 state에만 저장 (localStorage 덮어쓰지 않음)
                 setSharedCards(data.items);
                 setSharedView(true);
@@ -200,6 +210,10 @@ const App: React.FC = () => {
                 window.history.replaceState({}, '', window.location.pathname);
                 return;
               }
+            } else if (response.status === 404) {
+              showToast('🔍 공유 링크를 찾을 수 없습니다 (만료되었거나 삭제됨)');
+              window.history.replaceState({}, '', window.location.pathname);
+              return;
             }
           } catch (error) {
             console.error('Failed to load shared data from Worker:', error);
