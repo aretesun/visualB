@@ -108,8 +108,9 @@ const Card: React.FC<CardProps> = ({
   };
 
   const handleBlur = () => {
-    // 포커스를 잃을 때 빈 카드가 아니면 isNew 플래그 해제
-    if (item.isNew && onUpdate && !isEmpty) {
+    // 포커스를 잃을 때 isNew 플래그 해제
+    // (빈 카드면 자동 삭제 로직에 의해 삭제됨)
+    if (item.isNew && onUpdate) {
       onUpdate(item.id, { isNew: false });
     }
   };
