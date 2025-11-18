@@ -26,6 +26,8 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [longPressStickerId, setLongPressStickerId] = useState<string | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
+  const isDraggingRef = useRef(false);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const handleAddByUrl = () => {
     if (urlInput.trim()) {
@@ -65,9 +67,14 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
   const handleTouchStart = (sticker: Sticker, e: React.TouchEvent) => {
     e.stopPropagation();
 
-    // 롱 프레스 타이머 시작 (200ms)
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    isDraggingRef.current = false;
+
+    // 롱 프레스 타이머 시작 (400ms)
     longPressTimerRef.current = window.setTimeout(() => {
       setLongPressStickerId(sticker.id);
+      isDraggingRef.current = true;
 
       // 햅틱 피드백 (지원되는 경우)
       if ('vibrate' in navigator) {
@@ -75,21 +82,29 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
       }
 
       // 마우스 이벤트로 변환하여 기존 드래그 로직 사용
-      const touch = e.touches[0];
       const mouseEvent = new MouseEvent('mousedown', {
         clientX: touch.clientX,
         clientY: touch.clientY,
         bubbles: true,
       }) as any;
       onDragStart(sticker, mouseEvent);
-    }, 200);
+    }, 400);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    // 터치가 움직이면 롱 프레스 취소
-    if (longPressTimerRef.current && !longPressStickerId) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
+    if (!touchStartPosRef.current) return;
+
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const deltaY = Math.abs(touch.clientY - touchStartPosRef.current.y);
+    const moveThreshold = 10; // 10px 이상 움직이면 롱 프레스 취소
+
+    // 드래그 중이 아니고, 너무 많이 움직였으면 롱 프레스 취소
+    if (!isDraggingRef.current && (deltaX > moveThreshold || deltaY > moveThreshold)) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
     }
   };
 
@@ -100,6 +115,8 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
       longPressTimerRef.current = null;
     }
     setLongPressStickerId(null);
+    isDraggingRef.current = false;
+    touchStartPosRef.current = null;
   };
 
   const handleMouseDownSticker = (sticker: Sticker, e: React.MouseEvent) => {

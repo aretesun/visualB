@@ -628,6 +628,20 @@ const App: React.FC = () => {
       });
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+        }
+
+        rafIdRef.current = requestAnimationFrame(() => {
+          setDragGhostPosition({ x: touch.clientX, y: touch.clientY });
+          rafIdRef.current = null;
+        });
+      }
+    };
+
     const handleMouseUp = (e: MouseEvent) => {
       console.log('🔵 mouseup fired, dropped flag:', stickerDroppedRef.current);
 
@@ -676,10 +690,61 @@ const App: React.FC = () => {
       setDragGhostPosition(null);
     };
 
-    // 리스너 등록
+    const handleTouchEnd = (e: TouchEvent) => {
+      console.log('🔵 touchend fired, dropped flag:', stickerDroppedRef.current);
+
+      // RAF 클린업
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+
+      // 리스너 즉시 제거
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+
+      const currentDraggingSticker = useStickerStore.getState().draggingSticker;
+
+      if (stickerDroppedRef.current || !currentDraggingSticker || !canvasRef.current) {
+        console.log('🔴 Early return - dropped:', stickerDroppedRef.current, 'dragging:', !!currentDraggingSticker, 'canvas:', !!canvasRef.current);
+        setDraggingSticker(null);
+        setDragGhostPosition(null);
+        return;
+      }
+
+      const touch = e.changedTouches[0];
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      const dropX = touch.clientX - canvasRect.left;
+      const dropY = touch.clientY - canvasRect.top;
+
+      if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
+        stickerDroppedRef.current = true;
+        console.log('✅ Creating sticker instance (touch), setting dropped flag to true');
+        const newInstance: StickerInstance = {
+          id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          stickerId: currentDraggingSticker.id,
+          imageUrl: currentDraggingSticker.imageUrl,
+          position: { x: dropX - 40, y: dropY - 40 },
+          size: { width: 80, height: 80 },
+          zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
+        };
+        addInstance(newInstance);
+      } else {
+        console.log('❌ Drop outside canvas (touch)');
+      }
+
+      setDraggingSticker(null);
+      setDragGhostPosition(null);
+    };
+
+    // 리스너 등록 (마우스 + 터치)
     console.log('🟢 Registering event listeners for', sticker.id);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
   }, [setDraggingSticker, setDragGhostPosition, addInstance]);
 
   // 드래그 박스 선택
