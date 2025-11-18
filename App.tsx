@@ -792,7 +792,12 @@ const App: React.FC = () => {
     if (!e.ctrlKey && !e.metaKey) {
       clearSelection();
     }
-  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection]);
+
+    // 바탕 클릭 시 빈 새 카드 정리
+    cards.filter(card => card.isNew && !card.text && !card.imageUrl).forEach(card => {
+      updateCard(card.id, { isNew: false });
+    });
+  }, [draggingSticker, isPaletteExpanded, togglePalette, isSettingsOpen, setSelectionStart, setSelectionEnd, setSelecting, clearSelection, cards, updateCard]);
 
   useEffect(() => {
     if (!isSelecting) return;
