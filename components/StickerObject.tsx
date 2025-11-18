@@ -196,7 +196,9 @@ const StickerObject: React.FC<StickerObjectProps> = ({
         top: `${position.y}px`,
         width: `${sticker.size.width}px`,
         height: `${sticker.size.height}px`,
-        zIndex: Math.min(Math.max(sticker.zIndex, CONSTANTS.Z_INDEX.STICKER_BASE), CONSTANTS.Z_INDEX.STICKER_MAX),
+        zIndex: isDragging
+          ? CONSTANTS.Z_INDEX.STICKER_DRAGGING
+          : Math.min(Math.max(sticker.zIndex, CONSTANTS.Z_INDEX.STICKER_BASE), CONSTANTS.Z_INDEX.STICKER_MAX),
         touchAction: 'none',
       }}
       tabIndex={0}
