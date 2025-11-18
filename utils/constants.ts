@@ -58,14 +58,6 @@ export const CONSTANTS = {
     NORTH: 'n',
   } as const,
 
-  // 로컬 스토리지 키
-  STORAGE_KEYS: {
-    CARDS: 'visionBoardItems',
-    STICKERS: 'stickerPalette',
-    STICKER_INSTANCES: 'stickerInstances',
-    BACKGROUND: 'backgroundImage',
-  },
-
   // API
   WORKER_URL: 'https://vision-board-api.yesisun.workers.dev',
 

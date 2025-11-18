@@ -25,14 +25,12 @@ const App: React.FC = () => {
   // Store 가져오기
   const cards = useCanvasStore(state => state.cards);
   const viewport = useCanvasStore(state => state.viewport);
-  const backgroundImage = useCanvasStore(state => state.backgroundImage);
   const addCard = useCanvasStore(state => state.addCard);
   const updateCard = useCanvasStore(state => state.updateCard);
   const deleteCard = useCanvasStore(state => state.deleteCard);
   const setCards = useCanvasStore(state => state.setCards);
   const bringCardToFront = useCanvasStore(state => state.bringCardToFront);
   const setViewport = useCanvasStore(state => state.setViewport);
-  const refreshBackground = useCanvasStore(state => state.refreshBackground);
 
   const stickers = useStickerStore(state => state.palette);
   const stickerInstances = useStickerStore(state => state.instances);
@@ -135,11 +133,9 @@ const App: React.FC = () => {
               };
             });
             setCards(migratedCards);
-            console.log('✅ 카드 데이터 마이그레이션 완료:', migratedCards.length, '개');
 
             // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
             localStorage.removeItem('visionBoardItems');
-            console.log('✅ 구버전 카드 키 삭제 완료');
           } catch (e) {
             console.error('카드 마이그레이션 실패:', e);
           }
@@ -155,19 +151,16 @@ const App: React.FC = () => {
             if (oldStickers) {
               const parsedOldStickers = JSON.parse(oldStickers);
               setStickers(parsedOldStickers);
-              console.log('✅ 스티커 팔레트 마이그레이션 완료:', parsedOldStickers.length, '개');
             }
 
             if (oldStickerInstances) {
               const parsedOldInstances = JSON.parse(oldStickerInstances);
               setInstances(parsedOldInstances);
-              console.log('✅ 스티커 인스턴스 마이그레이션 완료:', parsedOldInstances.length, '개');
             }
 
             // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
             localStorage.removeItem('stickerPalette');
             localStorage.removeItem('stickerInstances');
-            console.log('✅ 구버전 스티커 키 삭제 완료');
           } catch (e) {
             console.error('스티커 마이그레이션 실패:', e);
           }
@@ -253,13 +246,6 @@ const App: React.FC = () => {
           ];
 
           setStickers(defaultStickers);
-          console.log('✅ 기본 스티커 로드 완료');
-        } else {
-          console.log('✅ Zustand에서 스티커 데이터 로드 완료:', currentStickers.length, '개');
-        }
-
-        if (currentInstances.length > 0) {
-          console.log('✅ Zustand에서 스티커 인스턴스 로드 완료:', currentInstances.length, '개');
         }
       } catch (error) {
         console.error('Failed to load initial data:', error);
@@ -609,13 +595,11 @@ const App: React.FC = () => {
 
   // 스티커 핸들러
   const handleStickerDragStart = useCallback((sticker: Sticker, e: React.MouseEvent) => {
-    console.log('🟡 Drag start for', sticker.id, '- resetting dropped flag to false');
     stickerDroppedRef.current = false; // 드래그 시작 시 플래그 초기화
 
     setDraggingSticker(sticker);
     setDragGhostPosition({ x: e.clientX, y: e.clientY });
 
-    // 이전 리스너가 있다면 제거 (안전장치)
     const handleMouseMove = (e: MouseEvent) => {
       // requestAnimationFrame으로 성능 최적화 및 호출 빈도 제한
       if (rafIdRef.current !== null) {
@@ -629,8 +613,6 @@ const App: React.FC = () => {
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      console.log('🔵 mouseup fired, dropped flag:', stickerDroppedRef.current);
-
       // RAF 클린업
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
@@ -646,7 +628,6 @@ const App: React.FC = () => {
 
       // 중복 실행 방지
       if (stickerDroppedRef.current || !currentDraggingSticker || !canvasRef.current) {
-        console.log('🔴 Early return - dropped:', stickerDroppedRef.current, 'dragging:', !!currentDraggingSticker, 'canvas:', !!canvasRef.current);
         setDraggingSticker(null);
         setDragGhostPosition(null);
         return;
@@ -658,7 +639,6 @@ const App: React.FC = () => {
 
       if (dropX >= 0 && dropX <= canvasRect.width && dropY >= 0 && dropY <= canvasRect.height) {
         stickerDroppedRef.current = true; // 드롭 완료 표시
-        console.log('✅ Creating sticker instance, setting dropped flag to true');
         const newInstance: StickerInstance = {
           id: `sticker_inst_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           stickerId: currentDraggingSticker.id,
@@ -668,8 +648,6 @@ const App: React.FC = () => {
           zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
         };
         addInstance(newInstance);
-      } else {
-        console.log('❌ Drop outside canvas');
       }
 
       setDraggingSticker(null);
@@ -677,7 +655,6 @@ const App: React.FC = () => {
     };
 
     // 리스너 등록
-    console.log('🟢 Registering event listeners for', sticker.id);
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
   }, [setDraggingSticker, setDragGhostPosition, addInstance]);
