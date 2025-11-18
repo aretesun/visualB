@@ -16,6 +16,7 @@ export interface Card {
   imageWidth?: number;  // 이미지 너비 (선택적)
   imageHeight?: number; // 이미지 높이 (선택적)
   imageOffset?: Position; // 이미지 오프셋 (마스크 기능용)
+  isNew?: boolean;    // 새로 생성된 카드 (자동 삭제 방지용)
 }
 
 // 레거시 타입 호환성을 위한 별칭

@@ -834,6 +834,7 @@ const App: React.FC = () => {
           onDelete={deleteCard}
           onBringToFront={bringCardToFront}
           onRequestUrlInput={handleRequestUrlInput}
+          onUpdate={updateCard}
           isUrlModalOpen={urlInputItemId === item.id && showUrlModal}
           isReadOnly={isSharedView}
           isSelected={selectedCards.has(item.id)}

@@ -54,6 +54,7 @@ export const useCanvasStore = create<CanvasState>()(
             imageWidth: card?.imageWidth,
             imageHeight: card?.imageHeight,
             imageOffset: card?.imageOffset,
+            isNew: card?.isNew !== undefined ? card.isNew : true, // 기본값: 새 카드
           };
 
           set({

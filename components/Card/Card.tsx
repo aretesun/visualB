@@ -18,6 +18,7 @@ interface CardProps {
   onDelete: (id: number) => void;
   onBringToFront: (id: number) => void;
   onRequestUrlInput: (id: number) => void;
+  onUpdate?: (id: number, updates: Partial<CardType>) => void;
   isUrlModalOpen?: boolean;
   isReadOnly?: boolean;
   isSelected?: boolean;
@@ -39,6 +40,7 @@ const Card: React.FC<CardProps> = ({
   onDelete,
   onBringToFront,
   onRequestUrlInput,
+  onUpdate,
   isUrlModalOpen = false,
   isReadOnly = false,
   isSelected = false,
@@ -77,20 +79,36 @@ const Card: React.FC<CardProps> = ({
   const isEmpty = !item.text && !item.imageUrl;
 
   // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
+  // 단, isNew 플래그가 true이면 삭제하지 않음 (새로 생성된 카드 보호)
   useEffect(() => {
-    if (!isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen) {
+    if (!item.isNew && !isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen) {
       onDelete(item.id);
     }
-  }, [isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
+  }, [item.isNew, isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
 
   const handleFocus = () => {
     onBringToFront(item.id);
+    // 카드에 포커스되면 isNew 플래그 해제
+    if (item.isNew && onUpdate) {
+      onUpdate(item.id, { isNew: false });
+    }
+  };
+
+  const handleBlur = () => {
+    // 포커스를 잃을 때 isNew 플래그 해제
+    if (item.isNew && onUpdate) {
+      onUpdate(item.id, { isNew: false });
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
     if (onSelect) {
       const isCtrlPressed = e.ctrlKey || e.metaKey;
       onSelect(item.id, isCtrlPressed);
+    }
+    // 클릭 시 isNew 플래그 해제
+    if (item.isNew && onUpdate) {
+      onUpdate(item.id, { isNew: false });
     }
   };
 
@@ -366,6 +384,7 @@ const Card: React.FC<CardProps> = ({
       ref={itemRef}
       data-object="card"
       onFocus={handleFocus}
+      onBlur={handleBlur}
       onMouseDown={(e) => {
         e.stopPropagation();
         handleFocus();
