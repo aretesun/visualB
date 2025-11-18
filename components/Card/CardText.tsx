@@ -71,7 +71,8 @@ const CardText: React.FC<CardTextProps> = ({
     }
   };
 
-  if (!isEditing && !text) {
+  // 편집 중이 아니고 텍스트도 없으면 null 반환 (이미지가 있는 경우 제외)
+  if (!isEditing && !text && hasImage) {
     return null;
   }
 
@@ -88,13 +89,23 @@ const CardText: React.FC<CardTextProps> = ({
           maxLength={300}
           className="w-full h-24 bg-transparent text-white placeholder-white/40 focus:outline-none resize-none"
         />
-      ) : (
+      ) : text ? (
         <p
           onClick={onEditStart}
           className="text-white text-base font-light break-words cursor-text"
         >
           {text}
         </p>
+      ) : (
+        <button
+          onClick={onEditStart}
+          className="w-full h-12 border-2 border-dashed border-white/30 rounded-md flex items-center justify-center text-white/50 hover:border-white/50 hover:text-white/70 transition-colors"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          <span className="text-sm">{t.card.addText || '텍스트 추가'}</span>
+        </button>
       )}
     </div>
   );

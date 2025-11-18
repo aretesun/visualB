@@ -65,7 +65,7 @@ const Card: React.FC<CardProps> = ({
     disabled: false,
   });
 
-  const [isEditingText, setIsEditingText] = useState(!item.text && !item.imageUrl);
+  const [isEditingText, setIsEditingText] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSelectingFile, setIsSelectingFile] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
