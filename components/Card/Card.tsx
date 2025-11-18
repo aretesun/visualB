@@ -88,6 +88,13 @@ const Card: React.FC<CardProps> = ({
     }
   }, [item.isNew, isMobile, isEmpty]);
 
+  // 텍스트나 이미지가 추가되면 isNew 플래그 해제
+  useEffect(() => {
+    if (item.isNew && onUpdate && !isEmpty) {
+      onUpdate(item.id, { isNew: false });
+    }
+  }, [item.isNew, isEmpty, onUpdate, item.id]);
+
   // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
   // 단, isNew 플래그가 true이면 삭제하지 않음 (새로 생성된 카드 보호)
   useEffect(() => {
@@ -98,15 +105,11 @@ const Card: React.FC<CardProps> = ({
 
   const handleFocus = () => {
     onBringToFront(item.id);
-    // 카드에 포커스되면 isNew 플래그 해제
-    if (item.isNew && onUpdate) {
-      onUpdate(item.id, { isNew: false });
-    }
   };
 
   const handleBlur = () => {
-    // 포커스를 잃을 때 isNew 플래그 해제
-    if (item.isNew && onUpdate) {
+    // 포커스를 잃을 때 빈 카드가 아니면 isNew 플래그 해제
+    if (item.isNew && onUpdate && !isEmpty) {
       onUpdate(item.id, { isNew: false });
     }
   };
@@ -115,10 +118,6 @@ const Card: React.FC<CardProps> = ({
     if (onSelect) {
       const isCtrlPressed = e.ctrlKey || e.metaKey;
       onSelect(item.id, isCtrlPressed);
-    }
-    // 클릭 시 isNew 플래그 해제
-    if (item.isNew && onUpdate) {
-      onUpdate(item.id, { isNew: false });
     }
   };
 
