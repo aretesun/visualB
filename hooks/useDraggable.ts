@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, RefObject } from 'react';
+import { useState, useEffect, useRef, RefObject, useCallback } from 'react';
 import type { Position } from '../types';
 
 interface DraggableOptions {
@@ -18,10 +18,16 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
   const isDraggingRef = useRef(false);
   const startPositionRef = useRef<Position>(initialPosition);
   const lastPositionRef = useRef<Position>(initialPosition);
+  const positionRef = useRef<Position>(initialPosition);
 
   useEffect(() => {
     isDraggingRef.current = isDragging;
   }, [isDragging]);
+
+  // position이 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
 
   // initialPosition이 변경되면 position도 업데이트 (드래그 중이 아닐 때만)
   useEffect(() => {
@@ -30,7 +36,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
     }
   }, [initialPosition.x, initialPosition.y, isDragging]);
 
-  const onPointerDown = (e: PointerEvent) => {
+  const onPointerDown = useCallback((e: PointerEvent) => {
     if (disabled) return; // 비활성화 상태면 즉시 리턴
     if (e.button !== 0) return;
     const targetElement = e.target as HTMLElement;
@@ -52,24 +58,24 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
             return;
         }
     }
-    
+
     if (ref.current) {
         const rect = ref.current.getBoundingClientRect();
         offsetRef.current = {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
         };
-        // 현재 position state 값을 시작 위치로 사용 (rect가 아닌)
-        const startPos = { x: position.x, y: position.y };
+        // ref로부터 최신 position 값을 시작 위치로 사용
+        const startPos = { x: positionRef.current.x, y: positionRef.current.y };
         startPositionRef.current = startPos;
         lastPositionRef.current = startPos;
         setIsDragging(true);
         e.preventDefault();
         e.stopPropagation();
     }
-  };
+  }, [disabled, handleRef, ref]);
 
-  const onPointerMove = (e: PointerEvent) => {
+  const onPointerMove = useCallback((e: PointerEvent) => {
     if (!isDraggingRef.current) return;
 
     let newX = e.clientX - offsetRef.current.x;
@@ -91,14 +97,15 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
       };
       onDragMove(newPosition, delta);
     }
-  };
-  
-  const onPointerUp = () => {
+  }, [ref, onDragMove]);
+
+  const onPointerUp = useCallback(() => {
     if (!isDraggingRef.current) return;
     setIsDragging(false);
 
-    let finalX = position.x;
-    let finalY = position.y;
+    // ref로부터 최신 position 값 사용
+    let finalX = positionRef.current.x;
+    let finalY = positionRef.current.y;
 
     finalX = Math.max(0, Math.min(finalX, window.innerWidth - (ref.current?.offsetWidth || 0)));
     finalY = Math.max(0, Math.min(finalY, window.innerHeight - (ref.current?.offsetHeight || 0)));
@@ -110,7 +117,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
       // delta를 전달하지 않음 - 드래그 종료 신호
       onDragEnd(finalPosition);
     }
-  };
+  }, [ref, onDragEnd]);
 
   useEffect(() => {
     const element = ref.current;
@@ -125,8 +132,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref, onDragEnd, position]); // position is needed to update onDragEnd with the final value
+  }, [ref, onPointerDown, onPointerMove, onPointerUp]);
 
   return { position, isDragging };
 };

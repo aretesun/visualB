@@ -652,7 +652,7 @@ const App: React.FC = () => {
           imageUrl: currentDraggingSticker.imageUrl,
           position: { x: dropX - 40, y: dropY - 40 },
           size: { width: 80, height: 80 },
-          zIndex: CONSTANTS.Z_INDEX.STICKER_DRAGGING,
+          zIndex: CONSTANTS.Z_INDEX.STICKER_BASE,
         };
         addInstance(newInstance);
       } else {
