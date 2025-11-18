@@ -92,6 +92,9 @@ const App: React.FC = () => {
   const timedIntervalMinutes = useBackgroundStore(state => state.timedIntervalMinutes);
   const customMode = useBackgroundStore(state => state.customMode);
   const source = useBackgroundStore(state => state.source);
+  const selectedSingleId = useBackgroundStore(state => state.selectedSingleId);
+  const randomBackgroundIds = useBackgroundStore(state => state.randomBackgroundIds);
+  const customBackgrounds = useBackgroundStore(state => state.customBackgrounds);
 
   // 설정 메뉴 상태 (외부에서 제어)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -268,7 +271,7 @@ const App: React.FC = () => {
     if (newBackground) {
       setCurrentBackground(newBackground);
     }
-  }, [source, customMode, getCurrentBackground]);
+  }, [source, customMode, selectedSingleId, randomBackgroundIds, customBackgrounds, getCurrentBackground]);
 
   // 타이머 기반 배경 랜덤 순환
   useEffect(() => {
