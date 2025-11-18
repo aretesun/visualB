@@ -101,6 +101,9 @@ const App: React.FC = () => {
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<string>('');
 
+  // 공유 보기 전용 state (localStorage에 저장하지 않음)
+  const [sharedCards, setSharedCards] = useState<Card[]>([]);
+
   // 초기 데이터 로드
   useEffect(() => {
     const loadInitialData = async () => {
@@ -182,12 +185,8 @@ const App: React.FC = () => {
             if (response.ok) {
               const data = await response.json();
               if (data.success && data.items) {
-                const currentLocal = localStorage.getItem(CONSTANTS.STORAGE_KEYS.CARDS);
-                if (currentLocal) {
-                  sessionStorage.setItem('backupLocalData', currentLocal);
-                }
-
-                setCards(data.items);
+                // 공유 보기용 state에만 저장 (localStorage 덮어쓰지 않음)
+                setSharedCards(data.items);
                 setSharedView(true);
                 showToast(t.toast.sharedBoardLoaded);
                 window.history.replaceState({}, '', window.location.pathname);
@@ -202,14 +201,10 @@ const App: React.FC = () => {
           }
         } else if (legacyData) {
           try {
-            const currentLocal = localStorage.getItem(CONSTANTS.STORAGE_KEYS.CARDS);
-            if (currentLocal) {
-              sessionStorage.setItem('backupLocalData', currentLocal);
-            }
-
             const jsonData = decodeURIComponent(atob(legacyData));
             const sharedItems = JSON.parse(jsonData) as Card[];
-            setCards(sharedItems);
+            // 공유 보기용 state에만 저장 (localStorage 덮어쓰지 않음)
+            setSharedCards(sharedItems);
             setSharedView(true);
             showToast(t.toast.sharedBoardLoaded);
             window.history.replaceState({}, '', window.location.pathname);
@@ -333,6 +328,9 @@ const App: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, [viewport, isSharedView, cards, setCards, setViewport]);
+
+  // 표시할 카드 결정 (공유 보기 vs 일반 모드)
+  const displayCards = isSharedView ? sharedCards : cards;
 
   // 배경 새로고침 핸들러
   const handleRefreshBackground = useCallback(() => {
@@ -558,7 +556,7 @@ const App: React.FC = () => {
           const response = await fetch(`${CONSTANTS.WORKER_URL}/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: cards }),
+            body: JSON.stringify({ items: displayCards }),
           });
 
           if (!response.ok) {
@@ -578,7 +576,7 @@ const App: React.FC = () => {
       }
 
       // 레거시 방식
-      const jsonData = JSON.stringify(cards);
+      const jsonData = JSON.stringify(displayCards);
       const base64Data = btoa(encodeURIComponent(jsonData));
       const shareUrl = `${window.location.origin}${window.location.pathname}?data=${base64Data}`;
 
@@ -593,7 +591,7 @@ const App: React.FC = () => {
       console.error('Link share failed:', error);
       showToast(t.toast.linkFailed);
     }
-  }, [cards, showToast, t]);
+  }, [displayCards, showToast, t]);
 
   // 스티커 핸들러
   const handleStickerDragStart = useCallback((sticker: Sticker, e: React.MouseEvent) => {
@@ -805,7 +803,7 @@ const App: React.FC = () => {
       )}
 
       {/* 카드들 */}
-      {cards.map((item, index) => (
+      {displayCards.map((item, index) => (
         <CardComponent
           key={item.id}
           item={item}
@@ -905,7 +903,7 @@ const App: React.FC = () => {
         <>
           <AddCardButton onAddCard={handleAddCard} />
           <SettingsMenu
-            items={cards}
+            items={displayCards}
             onRestore={handleRestore}
             onShowToast={showToast}
             isOpen={isSettingsOpen}
