@@ -804,7 +804,7 @@ const App: React.FC = () => {
       }}
       onMouseDown={handleCanvasMouseDown}
     >
-      <div className="absolute inset-0" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
+      <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}></div>
 
       {/* 공유 보기 모드 알림 */}
       {isSharedView && (
