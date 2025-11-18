@@ -86,10 +86,18 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
       {/* 설정 이모지 버튼 */}
       <button
         onClick={toggleOpen}
-        className="p-3 bg-white/20 text-white rounded-full hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all backdrop-blur-md shadow-lg text-2xl"
+        className="group p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 backdrop-blur-md shadow-lg text-2xl hover:shadow-xl"
         aria-label="Toggle settings menu"
       >
-        ⚙️
+        <span className={`inline-block transition-transform duration-300 ${isOpen ? 'rotate-90' : 'group-hover:rotate-45'}`}>
+          ⚙️
+        </span>
+        {/* Tooltip */}
+        {!isOpen && (
+          <span className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-black/80 text-white text-sm rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            설정
+          </span>
+        )}
       </button>
 
       {/* 설정 메뉴 */}
@@ -98,7 +106,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
           <div className="flex flex-col space-y-2">
             <button
               onClick={handleBackup}
-              className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-colors text-left"
+              className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 active:bg-white/30 active:scale-98 rounded-lg transition-all duration-150 text-left"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -107,7 +115,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
             </button>
             <button
               onClick={handleRestoreClick}
-              className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-colors text-left"
+              className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 active:bg-white/30 active:scale-98 rounded-lg transition-all duration-150 text-left"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -122,7 +130,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
                   onOpenBackgroundSettings();
                   closeMenu();
                 }}
-                className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-colors text-left"
+                className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 active:bg-white/30 active:scale-98 rounded-lg transition-all duration-150 text-left"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -140,8 +148,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
                     setLanguage('ko' as Language);
                     closeMenu();
                   }}
-                  className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors text-left ${
-                    language === 'ko' ? 'bg-white/30' : 'hover:bg-white/20'
+                  className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-150 text-left ${
+                    language === 'ko' ? 'bg-white/30' : 'hover:bg-white/20 active:bg-white/30 active:scale-98'
                   }`}
                 >
                   <span className="text-sm">{language === 'ko' ? '✓' : ' '}</span>
@@ -152,8 +160,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ items, onRestore, onShowToa
                     setLanguage('en' as Language);
                     closeMenu();
                   }}
-                  className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-colors text-left ${
-                    language === 'en' ? 'bg-white/30' : 'hover:bg-white/20'
+                  className={`flex items-center space-x-2 px-4 py-2 text-white rounded-lg transition-all duration-150 text-left ${
+                    language === 'en' ? 'bg-white/30' : 'hover:bg-white/20 active:bg-white/30 active:scale-98'
                   }`}
                 >
                   <span className="text-sm">{language === 'en' ? '✓' : ' '}</span>
