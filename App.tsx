@@ -135,11 +135,9 @@ const App: React.FC = () => {
               };
             });
             setCards(migratedCards);
-            console.log('✅ 카드 데이터 마이그레이션 완료:', migratedCards.length, '개');
 
             // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
             localStorage.removeItem('visionBoardItems');
-            console.log('✅ 구버전 카드 키 삭제 완료');
           } catch (e) {
             console.error('카드 마이그레이션 실패:', e);
           }
@@ -155,19 +153,16 @@ const App: React.FC = () => {
             if (oldStickers) {
               const parsedOldStickers = JSON.parse(oldStickers);
               setStickers(parsedOldStickers);
-              console.log('✅ 스티커 팔레트 마이그레이션 완료:', parsedOldStickers.length, '개');
             }
 
             if (oldStickerInstances) {
               const parsedOldInstances = JSON.parse(oldStickerInstances);
               setInstances(parsedOldInstances);
-              console.log('✅ 스티커 인스턴스 마이그레이션 완료:', parsedOldInstances.length, '개');
             }
 
             // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
             localStorage.removeItem('stickerPalette');
             localStorage.removeItem('stickerInstances');
-            console.log('✅ 구버전 스티커 키 삭제 완료');
           } catch (e) {
             console.error('스티커 마이그레이션 실패:', e);
           }
@@ -237,13 +232,6 @@ const App: React.FC = () => {
         if (currentStickers.length === 0) {
           const defaultStickers: Sticker[] = [
             {
-              id: 'default_santa',
-              imageUrl: santaImage,
-              name: 'Santa',
-              addedAt: Date.now() - 1000,
-              isPremade: true,
-            },
-            {
               id: 'default_tree',
               imageUrl: treeImage,
               name: 'Christmas Tree',
@@ -253,24 +241,25 @@ const App: React.FC = () => {
           ];
 
           setStickers(defaultStickers);
-          console.log('✅ 기본 스티커 로드 완료');
-        } else {
-          console.log('✅ Zustand에서 스티커 데이터 로드 완료:', currentStickers.length, '개');
         }
 
-        if (currentInstances.length > 0) {
-          console.log('✅ Zustand에서 스티커 인스턴스 로드 완료:', currentInstances.length, '개');
+        // 인스턴스도 비어있으면 기본 인스턴스 추가 (예: 기본 스티커를 캔버스에 배치)
+        if (currentInstances.length === 0 && currentStickers.length === 0) {
+          // 기본 스티커가 추가된 후에 인스턴스를 추가해야 함
+          // 여기서는 간단히 비워둠. 필요하다면 기본 인스턴스 로직 추가
         }
-      } catch (error) {
-        console.error('Failed to load initial data:', error);
-        showToast('⚠️ 데이터를 불러오는데 실패했습니다');
+
+        // 3. 캔버스 데이터 로드 (Zustand persist가 처리)
+        // 4. 뷰포트 초기화
+        setViewport({ width: window.innerWidth, height: window.innerHeight });
+
+        isInitialLoadComplete.current = true;
+      } finally {
+        // 로딩 상태 관리 (필요하다면)
       }
     };
 
-    loadInitialData().then(() => {
-      isInitialLoadComplete.current = true;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadInitialData();
   }, []);
 
   // 배경 이미지 관리
@@ -773,7 +762,7 @@ const App: React.FC = () => {
     }
 
     if ((e.target as HTMLElement).closest('[data-object="card"]') ||
-        (e.target as HTMLElement).closest('[data-object="sticker"]')) {
+      (e.target as HTMLElement).closest('[data-object="sticker"]')) {
       return;
     }
 
@@ -926,17 +915,17 @@ const App: React.FC = () => {
       {/* 선택 박스 */}
       {isSelecting && selectionStart && selectionEnd &&
         (Math.abs(selectionEnd.x - selectionStart.x) > 5 ||
-         Math.abs(selectionEnd.y - selectionStart.y) > 5) && (
-        <div
-          className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none"
-          style={{
-            left: `${Math.min(selectionStart.x, selectionEnd.x)}px`,
-            top: `${Math.min(selectionStart.y, selectionEnd.y)}px`,
-            width: `${Math.abs(selectionEnd.x - selectionStart.x)}px`,
-            height: `${Math.abs(selectionEnd.y - selectionStart.y)}px`,
-          }}
-        />
-      )}
+          Math.abs(selectionEnd.y - selectionStart.y) > 5) && (
+          <div
+            className="absolute border-2 border-blue-400 bg-blue-400/10 pointer-events-none"
+            style={{
+              left: `${Math.min(selectionStart.x, selectionEnd.x)}px`,
+              top: `${Math.min(selectionStart.y, selectionEnd.y)}px`,
+              width: `${Math.abs(selectionEnd.x - selectionStart.x)}px`,
+              height: `${Math.abs(selectionEnd.y - selectionStart.y)}px`,
+            }}
+          />
+        )}
 
       {/* 드래그 중인 고스트 이미지 */}
       {draggingSticker && dragGhostPosition && (

@@ -188,6 +188,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
         handleFocus();
         handleClick(e);
       }}
+      onContextMenu={(e) => e.preventDefault()}
       className={`absolute cursor-move group ${
         isSelected ? 'ring-2 ring-blue-400 rounded' : ''
       }`}
@@ -200,6 +201,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
           ? CONSTANTS.Z_INDEX.STICKER_DRAGGING
           : Math.min(Math.max(sticker.zIndex, CONSTANTS.Z_INDEX.STICKER_BASE), CONSTANTS.Z_INDEX.STICKER_MAX),
         touchAction: 'none',
+        WebkitTouchCallout: 'none',
       }}
       tabIndex={0}
     >

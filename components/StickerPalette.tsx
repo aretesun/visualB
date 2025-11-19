@@ -171,13 +171,14 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
                   {stickers.map((sticker) => (
                     <div
                       key={sticker.id}
-                      className={`relative group bg-white/5 hover:bg-white/10 rounded-lg p-2 cursor-move transition-all select-none ${
-                        longPressStickerId === sticker.id ? 'scale-110 bg-white/20 shadow-lg' : ''
-                      }`}
+                      className={`relative group bg-white/5 hover:bg-white/10 rounded-lg p-2 cursor-move transition-all select-none ${longPressStickerId === sticker.id ? 'scale-110 bg-white/20 shadow-lg' : ''
+                        }`}
+                      onContextMenu={(e) => e.preventDefault()}
                       onMouseDown={(e) => handleMouseDownSticker(sticker, e)}
                       onTouchStart={(e) => handleTouchStart(sticker, e)}
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
+                      style={{ WebkitTouchCallout: 'none' }}
                     >
                       <div className="aspect-square flex items-center justify-center mb-1">
                         <img

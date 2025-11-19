@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(tree:*)",
+      "Bash(npm install:*)",
+      "Bash(git reset:*)",
+      "Bash(git fetch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: Add expiration validation for shared vision boards\n\n- Add cloudflare-worker folder to repository for unified management\n- Implement explicit expiration check in handleLoad function\n- Prevent access to expired boards even if KV TTL deletion is delayed\n- Auto-delete expired data from KV when accessed\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

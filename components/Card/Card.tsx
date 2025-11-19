@@ -101,7 +101,6 @@ const Card: React.FC<CardProps> = ({
   // 단, 실제로 편집을 시작한 적이 있어야 함 (hasEditedRef.current === true)
   useEffect(() => {
     if (item.isNew && !isEditingText && isEmpty && onUpdate && hasEditedRef.current) {
-      console.log('🔄 Card', item.id, ': Edit mode ended (after editing), clearing isNew flag');
       onUpdate(item.id, { isNew: false });
     }
   }, [item.isNew, isEditingText, isEmpty, onUpdate, item.id]);
@@ -110,18 +109,7 @@ const Card: React.FC<CardProps> = ({
   // 단, isNew 플래그가 true이면 삭제하지 않음 (새로 생성된 카드 보호)
   useEffect(() => {
     const shouldDelete = !item.isNew && !isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen;
-    console.log('🧐 Card', item.id, 'delete check:', {
-      isNew: item.isNew,
-      isEditingText,
-      hasText: !!item.text,
-      hasImage: !!item.imageUrl,
-      isSelectingFile,
-      showDropdown,
-      isUrlModalOpen,
-      '→ shouldDelete': shouldDelete
-    });
     if (shouldDelete) {
-      console.log('❌ DELETING CARD:', item.id);
       onDelete(item.id);
     }
   }, [item.isNew, isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
@@ -140,19 +128,20 @@ const Card: React.FC<CardProps> = ({
 
   // 바탕 클릭 감지 (카드 외부 클릭)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (itemRef.current && !itemRef.current.contains(event.target as Node)) {
         // 카드 외부 클릭 시, 빈 새 카드면 isNew 해제
         if (item.isNew && !item.text && !item.imageUrl && !isEditingText && onUpdate) {
-          console.log('🌍 Card', item.id, ': Clicked outside, clearing isNew');
           onUpdate(item.id, { isNew: false });
         }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [item.id, item.isNew, item.text, item.imageUrl, isEditingText, onUpdate]);
 
@@ -444,11 +433,9 @@ const Card: React.FC<CardProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border p-3 ${
-        isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
-      } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${
-        isResizing ? 'cursor-nwse-resize' : ''
-      } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : 'border-white/20'}`}
+      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border p-3 ${isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
+        } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${isResizing ? 'cursor-nwse-resize' : ''
+        } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : 'border-white/20'}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -465,7 +452,6 @@ const Card: React.FC<CardProps> = ({
         hasImage={!!item.imageUrl}
         onTextChange={(text) => onTextChange(item.id, text)}
         onEditStart={() => {
-          console.log('📝 Card', item.id, ': onEditStart called, setting isEditingText to true');
           hasEditedRef.current = true; // 편집 시작 표시
           setIsEditingText(true);
           setShowDropdown(false); // 텍스트 편집 시작 시 이미지 옵션창 닫기
@@ -618,6 +604,8 @@ const Card: React.FC<CardProps> = ({
 // React.memo로 최적화
 export default React.memo(Card, (prev, next) => {
   if (prev.item.id !== next.item.id) return false;
+  if (prev.item.isNew !== next.item.isNew) return false;
+  if (prev.index !== next.index) return false;
   if (
     prev.item.position.x !== next.item.position.x ||
     prev.item.position.y !== next.item.position.y
