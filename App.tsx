@@ -232,6 +232,13 @@ const App: React.FC = () => {
         if (currentStickers.length === 0) {
           const defaultStickers: Sticker[] = [
             {
+              id: 'default_santa',
+              imageUrl: santaImage,
+              name: 'Santa',
+              addedAt: Date.now() - 1000,
+              isPremade: true,
+            },
+            {
               id: 'default_tree',
               imageUrl: treeImage,
               name: 'Christmas Tree',
@@ -240,10 +247,47 @@ const App: React.FC = () => {
             }
           ];
 
-          setStickers(defaultStickers);
+          // 저장된 스티커가 없으면 기본 스티커 설정
+          if (currentStickers.length === 0) {
+            setStickers(defaultStickers);
+          } else {
+            // 저장된 스티커가 있으면, 기본 스티커(산타, 트리)의 이미지 URL을 최신으로 업데이트
+            // (빌드마다 URL이 바뀔 수 있으므로 저장된 URL 대신 현재 import된 URL 사용)
+            const updatedStickers = currentStickers.map(sticker => {
+              if (sticker.id === 'default_santa') {
+                return { ...sticker, imageUrl: santaImage };
+              }
+              if (sticker.id === 'default_tree') {
+                return { ...sticker, imageUrl: treeImage };
+              }
+              return sticker;
+            });
+
+            // 변경사항이 있으면 업데이트
+            if (JSON.stringify(updatedStickers) !== JSON.stringify(currentStickers)) {
+              setStickers(updatedStickers);
+            }
+          }
         }
 
         // 인스턴스도 비어있으면 기본 인스턴스 추가 (예: 기본 스티커를 캔버스에 배치)
+        if (currentInstances.length > 0) {
+          // 인스턴스의 이미지 URL도 최신으로 업데이트 (기본 스티커인 경우)
+          const updatedInstances = currentInstances.map(instance => {
+            if (instance.stickerId === 'default_santa') {
+              return { ...instance, imageUrl: santaImage };
+            }
+            if (instance.stickerId === 'default_tree') {
+              return { ...instance, imageUrl: treeImage };
+            }
+            return instance;
+          });
+
+          if (JSON.stringify(updatedInstances) !== JSON.stringify(currentInstances)) {
+            console.log('🔄 Updating premade sticker instance URLs');
+            setInstances(updatedInstances);
+          }
+        }
         if (currentInstances.length === 0 && currentStickers.length === 0) {
           // 기본 스티커가 추가된 후에 인스턴스를 추가해야 함
           // 여기서는 간단히 비워둠. 필요하다면 기본 인스턴스 로직 추가
