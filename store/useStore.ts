@@ -4,13 +4,12 @@ import { Card, Position, Size, Sticker, StickerInstance } from '../types';
 import { CONSTANTS } from '../utils/constants';
 
 // ============================================
-// Canvas Store (카드, 뷰포트, 배경)
+// Canvas Store (카드, 뷰포트)
 // ============================================
 interface CanvasState {
   // 상태
   cards: Card[];
   viewport: Size;
-  backgroundImage: string;
   nextId: number;
 
   // 액션
@@ -20,8 +19,6 @@ interface CanvasState {
   setCards: (cards: Card[]) => void;
   bringCardToFront: (id: number) => void;
   setViewport: (size: Size) => void;
-  setBackground: (url: string) => void;
-  refreshBackground: () => void;
 
   // 유틸리티
   getNextId: () => number;
@@ -34,7 +31,6 @@ export const useCanvasStore = create<CanvasState>()(
       (set, get) => ({
         cards: [],
         viewport: { width: window.innerWidth, height: window.innerHeight },
-        backgroundImage: '',
         nextId: 1,
 
         addCard: (card) => {
@@ -96,17 +92,6 @@ export const useCanvasStore = create<CanvasState>()(
           set({ viewport: size });
         },
 
-        setBackground: (url) => {
-          set({ backgroundImage: url });
-        },
-
-        refreshBackground: () => {
-          const randomIndex = Math.floor(
-            Math.random() * CONSTANTS.BACKGROUND_IMAGES.length
-          );
-          set({ backgroundImage: CONSTANTS.BACKGROUND_IMAGES[randomIndex] });
-        },
-
         getNextId: () => get().nextId,
 
         canAddCard: () => get().cards.length < CONSTANTS.MAX_CARDS,
@@ -115,7 +100,6 @@ export const useCanvasStore = create<CanvasState>()(
         name: 'canvas-storage',
         partialize: (state) => ({
           cards: state.cards,
-          backgroundImage: state.backgroundImage,
           nextId: state.nextId,
         }),
       }

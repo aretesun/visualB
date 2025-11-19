@@ -73,15 +73,24 @@ const Card: React.FC<CardProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [isEditingImage, setIsEditingImage] = useState(false);
   const [isImageLocked, setIsImageLocked] = useState(true);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   const isEmpty = !item.text && !item.imageUrl;
 
-  // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
+  // 사용자 상호작용 추적
   useEffect(() => {
-    if (!isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen) {
+    if (isEditingText || isSelectingFile || showDropdown || item.text || item.imageUrl) {
+      setHasInteracted(true);
+    }
+  }, [isEditingText, isSelectingFile, showDropdown, item.text, item.imageUrl]);
+
+  // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
+  // 단, 사용자가 한번이라도 상호작용한 경우에만 삭제
+  useEffect(() => {
+    if (hasInteracted && !isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen) {
       onDelete(item.id);
     }
-  }, [isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
+  }, [hasInteracted, isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
 
   const handleFocus = () => {
     onBringToFront(item.id);
