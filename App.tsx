@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
-import { Card, Position, Sticker, StickerInstance, Size, LegacyCard } from './types';
+import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
+import { Card, Position, Sticker, StickerInstance, Size } from './types';
 import CardComponent from './components/Card';
 import Toolbar from './components/Toolbar';
 import AddCardButton from './components/AddCardButton';
@@ -11,13 +11,16 @@ import ShareModal from './components/ShareModal';
 import StickerPalette from './components/StickerPalette';
 import StickerObject from './components/StickerObject';
 import BackgroundSettingsModal from './components/BackgroundSettingsModal';
+import BoardManagerModal from './components/BoardManagerModal';
 import { useLanguage } from './contexts/LanguageContext';
 import { useCanvasStore, useStickerStore, useSelectionStore, useUIStore } from './store/useStore';
-import { useBackgroundStore } from './store/useBackgroundStore';
+import { useBackgroundStore, DEFAULT_BACKGROUND_SETTINGS } from './store/useBackgroundStore';
+import { useBoardStore } from './store/useBoardStore';
 import { CONSTANTS } from './utils/constants';
 import { PositionUtils } from './utils/positionUtils';
 import santaImage from './sticker/santa.png';
 import treeImage from './sticker/tree.png';
+import { migrateLegacyStorage } from './services/migrationService';
 
 const App: React.FC = () => {
   const { t } = useLanguage();
@@ -25,14 +28,14 @@ const App: React.FC = () => {
   // Store 가져오기
   const cards = useCanvasStore(state => state.cards);
   const viewport = useCanvasStore(state => state.viewport);
-  const backgroundImage = useCanvasStore(state => state.backgroundImage);
   const addCard = useCanvasStore(state => state.addCard);
   const updateCard = useCanvasStore(state => state.updateCard);
   const deleteCard = useCanvasStore(state => state.deleteCard);
   const setCards = useCanvasStore(state => state.setCards);
   const bringCardToFront = useCanvasStore(state => state.bringCardToFront);
+  const bringCardForward = useCanvasStore(state => state.bringCardForward);
+  const sendCardBackward = useCanvasStore(state => state.sendCardBackward);
   const setViewport = useCanvasStore(state => state.setViewport);
-  const refreshBackground = useCanvasStore(state => state.refreshBackground);
 
   const stickers = useStickerStore(state => state.palette);
   const stickerInstances = useStickerStore(state => state.instances);
@@ -47,6 +50,8 @@ const App: React.FC = () => {
   const deleteInstance = useStickerStore(state => state.deleteInstance);
   const setInstances = useStickerStore(state => state.setInstances);
   const bringInstanceToFront = useStickerStore(state => state.bringInstanceToFront);
+  const bringInstanceForward = useStickerStore(state => state.bringInstanceForward);
+  const sendInstanceBackward = useStickerStore(state => state.sendInstanceBackward);
   const togglePalette = useStickerStore(state => state.togglePalette);
   const setDraggingSticker = useStickerStore(state => state.setDraggingSticker);
   const setDragGhostPosition = useStickerStore(state => state.setDragGhostPosition);
@@ -85,6 +90,10 @@ const App: React.FC = () => {
   const lastDragDeltaRef = useRef<Position | null>(null);
   const stickerDroppedRef = useRef<boolean>(false); // 스티커 드롭 플래그
   const rafIdRef = useRef<number | null>(null); // RAF ID를 컴포넌트 레벨로 이동
+  const lastFailedBackgroundRef = useRef<string | null>(null);
+  const isSwitchingBoardRef = useRef(false);
+  const boardSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLoadedBoardIdRef = useRef<string | null>(null);
 
   // 배경 설정 store
   const getCurrentBackground = useBackgroundStore(state => state.getCurrentBackground);
@@ -96,10 +105,48 @@ const App: React.FC = () => {
   const randomBackgroundIds = useBackgroundStore(state => state.randomBackgroundIds);
   const customBackgrounds = useBackgroundStore(state => state.customBackgrounds);
 
+  const backgroundSnapshot = useMemo(() => ({
+    source,
+    customBackgrounds: [...customBackgrounds],
+    customMode,
+    selectedSingleId,
+    randomBackgroundIds: [...randomBackgroundIds],
+    randomInterval,
+    timedIntervalMinutes,
+  }), [source, customBackgrounds, customMode, selectedSingleId, randomBackgroundIds, randomInterval, timedIntervalMinutes]);
+
+  const createDefaultStickers = useCallback((): Sticker[] => ([
+    {
+      id: 'default_santa',
+      imageUrl: santaImage,
+      name: 'Santa',
+      addedAt: Date.now() - 1000,
+      isPremade: true,
+    },
+    {
+      id: 'default_tree',
+      imageUrl: treeImage,
+      name: 'Christmas Tree',
+      addedAt: Date.now(),
+      isPremade: true,
+    },
+  ]), []);
+
+  const boards = useBoardStore(state => state.boards);
+  const activeBoardId = useBoardStore(state => state.activeBoardId);
+  const addBoard = useBoardStore(state => state.addBoard);
+  const updateBoard = useBoardStore(state => state.updateBoard);
+  const removeBoard = useBoardStore(state => state.removeBoard);
+  const renameBoard = useBoardStore(state => state.renameBoard);
+  const setActiveBoard = useBoardStore(state => state.setActiveBoard);
+
   // 설정 메뉴 상태 (외부에서 제어)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isBackgroundSettingsOpen, setIsBackgroundSettingsOpen] = useState(false);
+  const [isBoardManagerOpen, setIsBoardManagerOpen] = useState(false);
   const [currentBackground, setCurrentBackground] = useState<string>('');
+  const [backgroundTone, setBackgroundTone] = useState<'light' | 'dark'>('dark');
+  const [isBootstrapped, setIsBootstrapped] = useState(false);
 
   // 공유 보기 전용 state (localStorage에 저장하지 않음)
   const [sharedCards, setSharedCards] = useState<Card[]>([]);
@@ -109,63 +156,15 @@ const App: React.FC = () => {
     const loadInitialData = async () => {
       try {
         // 0. 이전 버전 데이터 마이그레이션 (한 번만 실행)
-        const oldCards = localStorage.getItem('visionBoardItems');
-        const newCards = localStorage.getItem('canvas-storage');
-
-        // 새 키에 데이터가 없고, 이전 키에 데이터가 있으면 마이그레이션
-        if (!newCards && oldCards) {
-          try {
-            const parsedOldCards: LegacyCard[] = JSON.parse(oldCards);
-            // 기존 데이터 마이그레이션 (type 필드 제거)
-            const migratedCards: Card[] = parsedOldCards.map((item) => {
-              if (item.type === 'text') {
-                return { id: item.id, position: item.position, text: item.text };
-              } else if (item.type === 'image') {
-                return { id: item.id, position: item.position, imageUrl: item.url || item.imageUrl };
-              }
-              // 이미 새 형식인 경우
-              return {
-                id: item.id,
-                position: item.position,
-                text: item.text,
-                imageUrl: item.imageUrl,
-                imageWidth: item.imageWidth,
-                imageHeight: item.imageHeight,
-                imageOffset: item.imageOffset,
-              };
-            });
-            setCards(migratedCards);
-
-            // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
-            localStorage.removeItem('visionBoardItems');
-          } catch (e) {
-            console.error('카드 마이그레이션 실패:', e);
-          }
+        const legacyStorageData = migrateLegacyStorage();
+        if (legacyStorageData.cards) {
+          setCards(legacyStorageData.cards);
         }
-
-        // 스티커 마이그레이션
-        const oldStickers = localStorage.getItem('stickerPalette');
-        const oldStickerInstances = localStorage.getItem('stickerInstances');
-        const newStickers = localStorage.getItem('sticker-storage');
-
-        if (!newStickers && (oldStickers || oldStickerInstances)) {
-          try {
-            if (oldStickers) {
-              const parsedOldStickers = JSON.parse(oldStickers);
-              setStickers(parsedOldStickers);
-            }
-
-            if (oldStickerInstances) {
-              const parsedOldInstances = JSON.parse(oldStickerInstances);
-              setInstances(parsedOldInstances);
-            }
-
-            // 마이그레이션 완료 후 구버전 키 삭제 (충돌 방지)
-            localStorage.removeItem('stickerPalette');
-            localStorage.removeItem('stickerInstances');
-          } catch (e) {
-            console.error('스티커 마이그레이션 실패:', e);
-          }
+        if (legacyStorageData.stickers) {
+          setStickers(legacyStorageData.stickers);
+        }
+        if (legacyStorageData.stickerInstances) {
+          setInstances(legacyStorageData.stickerInstances);
         }
 
         // 1. URL 파라미터에서 공유된 ID 체크
@@ -230,43 +229,24 @@ const App: React.FC = () => {
 
         // Zustand에 데이터가 없을 때만 기본 스티커를 추가
         if (currentStickers.length === 0) {
-          const defaultStickers: Sticker[] = [
-            {
-              id: 'default_santa',
-              imageUrl: santaImage,
-              name: 'Santa',
-              addedAt: Date.now() - 1000,
-              isPremade: true,
-            },
-            {
-              id: 'default_tree',
-              imageUrl: treeImage,
-              name: 'Christmas Tree',
-              addedAt: Date.now(),
-              isPremade: true,
+          const defaultStickers = createDefaultStickers();
+          setStickers(defaultStickers);
+        } else {
+          // 저장된 스티커가 있으면, 기본 스티커(산타, 트리)의 이미지 URL을 최신으로 업데이트
+          // (빌드마다 URL이 바뀔 수 있으므로 저장된 URL 대신 현재 import된 URL 사용)
+          const updatedStickers = currentStickers.map(sticker => {
+            if (sticker.id === 'default_santa') {
+              return { ...sticker, imageUrl: santaImage };
             }
-          ];
-
-          // 저장된 스티커가 없으면 기본 스티커 설정
-          if (currentStickers.length === 0) {
-            setStickers(defaultStickers);
-          } else {
-            // 저장된 스티커가 있으면, 기본 스티커(산타, 트리)의 이미지 URL을 최신으로 업데이트
-            // (빌드마다 URL이 바뀔 수 있으므로 저장된 URL 대신 현재 import된 URL 사용)
-            const updatedStickers = currentStickers.map(sticker => {
-              if (sticker.id === 'default_santa') {
-                return { ...sticker, imageUrl: santaImage };
-              }
-              if (sticker.id === 'default_tree') {
-                return { ...sticker, imageUrl: treeImage };
-              }
-              return sticker;
-            });
-
-            // 변경사항이 있으면 업데이트
-            if (JSON.stringify(updatedStickers) !== JSON.stringify(currentStickers)) {
-              setStickers(updatedStickers);
+            if (sticker.id === 'default_tree') {
+              return { ...sticker, imageUrl: treeImage };
             }
+            return sticker;
+          });
+
+          // 변경사항이 있으면 업데이트
+          if (JSON.stringify(updatedStickers) !== JSON.stringify(currentStickers)) {
+            setStickers(updatedStickers);
           }
         }
 
@@ -298,6 +278,7 @@ const App: React.FC = () => {
         setViewport({ width: window.innerWidth, height: window.innerHeight });
 
         isInitialLoadComplete.current = true;
+        setIsBootstrapped(true);
       } finally {
         // 로딩 상태 관리 (필요하다면)
       }
@@ -314,6 +295,187 @@ const App: React.FC = () => {
     // getCurrentBackground는 Zustand selector이므로 의존성에서 제외
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source, customMode, selectedSingleId, randomBackgroundIds, customBackgrounds]);
+
+  // 배경 로딩 실패 시 fallback 적용
+  useEffect(() => {
+    if (!currentBackground) {
+      return;
+    }
+
+    let isCancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (isCancelled) return;
+      lastFailedBackgroundRef.current = null;
+    };
+    img.onerror = () => {
+      if (isCancelled) return;
+      if (lastFailedBackgroundRef.current === currentBackground) return;
+      lastFailedBackgroundRef.current = currentBackground;
+
+      const fallback = CONSTANTS.BACKGROUND_IMAGES[0];
+      if (currentBackground !== fallback) {
+        setCurrentBackground(fallback);
+      } else {
+        setCurrentBackground('');
+      }
+    };
+    img.src = currentBackground;
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentBackground]);
+
+  useEffect(() => {
+    if (!currentBackground) {
+      setBackgroundTone('dark');
+      return;
+    }
+
+    let isCancelled = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (isCancelled) return;
+      try {
+        const canvas = document.createElement('canvas');
+        const size = 32;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setBackgroundTone('dark');
+          return;
+        }
+        ctx.drawImage(img, 0, 0, size, size);
+        const { data } = ctx.getImageData(0, 0, size, size);
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+          sum += luminance;
+        }
+        const avg = sum / (data.length / 4);
+        setBackgroundTone(avg > 0.6 ? 'light' : 'dark');
+      } catch (error) {
+        setBackgroundTone('dark');
+      }
+    };
+    img.onerror = () => {
+      if (isCancelled) return;
+      setBackgroundTone('dark');
+    };
+    img.src = currentBackground;
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentBackground]);
+
+  // 보드 초기화 (기존 데이터 -> 기본 보드)
+  useEffect(() => {
+    if (!isBootstrapped || boards.length > 0) {
+      return;
+    }
+
+    const initialBoardId = `board_${Date.now()}`;
+    addBoard({
+      id: initialBoardId,
+      name: t.boards?.defaultName || 'My Board',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      cards,
+      stickers,
+      stickerInstances,
+      background: backgroundSnapshot,
+    });
+    setActiveBoard(initialBoardId);
+  }, [isBootstrapped, boards.length, addBoard, setActiveBoard, cards, stickers, stickerInstances, backgroundSnapshot, t.boards?.defaultName]);
+
+  // 보드 변경 시 데이터 로드
+  useEffect(() => {
+    if (!activeBoardId) {
+      return;
+    }
+    if (lastLoadedBoardIdRef.current === activeBoardId) {
+      return;
+    }
+
+    const board = useBoardStore.getState().boards.find((b) => b.id === activeBoardId);
+    if (!board) {
+      return;
+    }
+
+    let nextStickers = board.stickers;
+    const shouldSeedDefaults =
+      board.cards.length === 0 &&
+      board.stickers.length === 0 &&
+      board.stickerInstances.length === 0 &&
+      board.createdAt === board.updatedAt;
+
+    if (shouldSeedDefaults) {
+      nextStickers = createDefaultStickers();
+      updateBoard(board.id, { stickers: nextStickers });
+    } else {
+      const updatedPremade = board.stickers.map((sticker) => {
+        if (sticker.id === 'default_santa') {
+          return { ...sticker, imageUrl: santaImage };
+        }
+        if (sticker.id === 'default_tree') {
+          return { ...sticker, imageUrl: treeImage };
+        }
+        return sticker;
+      });
+
+      if (JSON.stringify(updatedPremade) !== JSON.stringify(board.stickers)) {
+        nextStickers = updatedPremade;
+        updateBoard(board.id, { stickers: updatedPremade });
+      }
+    }
+
+    isSwitchingBoardRef.current = true;
+    setCards(board.cards);
+    setStickers(nextStickers);
+    setInstances(board.stickerInstances);
+    useBackgroundStore.setState(board.background);
+    const nextBackground = getCurrentBackground();
+    if (nextBackground) {
+      setCurrentBackground(nextBackground);
+    }
+    lastLoadedBoardIdRef.current = activeBoardId;
+    setTimeout(() => {
+      isSwitchingBoardRef.current = false;
+    }, 0);
+  }, [activeBoardId, setCards, setStickers, setInstances, getCurrentBackground, createDefaultStickers, updateBoard]);
+
+  // 현재 보드 데이터 동기화
+  useEffect(() => {
+    if (!activeBoardId || isSwitchingBoardRef.current) {
+      return;
+    }
+
+    if (boardSyncTimerRef.current) {
+      clearTimeout(boardSyncTimerRef.current);
+    }
+
+    boardSyncTimerRef.current = setTimeout(() => {
+      updateBoard(activeBoardId, {
+        cards,
+        stickers,
+        stickerInstances,
+        background: backgroundSnapshot,
+      });
+    }, 200);
+
+    return () => {
+      if (boardSyncTimerRef.current) {
+        clearTimeout(boardSyncTimerRef.current);
+      }
+    };
+  }, [activeBoardId, cards, stickers, stickerInstances, backgroundSnapshot, updateBoard]);
 
   // 타이머 기반 배경 랜덤 순환
   useEffect(() => {
@@ -396,6 +558,31 @@ const App: React.FC = () => {
     }
     // 커스텀 단일 모드는 새로고침 불필요 (동일한 이미지가 계속 표시됨)
   }, [source, customMode, randomBackgroundIds, getCurrentBackground]);
+
+  const canRefreshBackground =
+    source === 'system' ||
+    (source === 'custom' && customMode === 'random' && randomBackgroundIds.length > 0);
+
+  const handleCreateBoard = useCallback((name: string) => {
+    const newBoardId = `board_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const background = {
+      ...DEFAULT_BACKGROUND_SETTINGS,
+      customBackgrounds: [],
+      randomBackgroundIds: [],
+    };
+    addBoard({
+      id: newBoardId,
+      name,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      cards: [],
+      stickers: createDefaultStickers(),
+      stickerInstances: [],
+      background,
+    });
+    setActiveBoard(newBoardId);
+    setIsBoardManagerOpen(false);
+  }, [addBoard, setActiveBoard, setIsBoardManagerOpen, createDefaultStickers]);
 
   // 카드 추가 핸들러
   const handleAddCard = useCallback(() => {
@@ -924,6 +1111,7 @@ const App: React.FC = () => {
           key={item.id}
           item={item}
           index={index}
+          backgroundTone={backgroundTone}
           onPositionChange={(id, pos, delta) => handleObjectPositionChange(String(id), 'card', pos, delta)}
           onTextChange={(id, text) => updateCard(id, { text })}
           onImageChange={(id, imageUrl) => updateCard(id, { imageUrl })}
@@ -931,6 +1119,8 @@ const App: React.FC = () => {
           onImageOffsetChange={(id, offset) => updateCard(id, { imageOffset: offset })}
           onDelete={deleteCard}
           onBringToFront={bringCardToFront}
+          onLayerUp={bringCardForward}
+          onLayerDown={sendCardBackward}
           onRequestUrlInput={handleRequestUrlInput}
           onUpdate={updateCard}
           isUrlModalOpen={urlInputItemId === item.id && showUrlModal}
@@ -950,6 +1140,8 @@ const App: React.FC = () => {
           onSizeChange={(id, size) => updateInstance(id, { size })}
           onDelete={deleteInstance}
           onBringToFront={bringInstanceToFront}
+          onLayerUp={bringInstanceForward}
+          onLayerDown={sendInstanceBackward}
           isReadOnly={isSharedView}
           isSelected={selectedStickers.has(sticker.id)}
           onSelect={selectSticker}
@@ -1015,6 +1207,7 @@ const App: React.FC = () => {
         onRefreshBackground={handleRefreshBackground}
         onShareClick={openShareModal}
         isSharedView={isSharedView}
+        showRefreshBackground={canRefreshBackground}
       />
       {!isSharedView && (
         <>
@@ -1026,6 +1219,7 @@ const App: React.FC = () => {
             isOpen={isSettingsOpen}
             onToggle={() => setIsSettingsOpen(!isSettingsOpen)}
             onOpenBackgroundSettings={() => setIsBackgroundSettingsOpen(true)}
+            onOpenBoardManager={() => setIsBoardManagerOpen(true)}
           />
         </>
       )}
@@ -1051,6 +1245,18 @@ const App: React.FC = () => {
         <BackgroundSettingsModal
           isOpen={isBackgroundSettingsOpen}
           onClose={() => setIsBackgroundSettingsOpen(false)}
+        />
+      )}
+      {isBoardManagerOpen && (
+        <BoardManagerModal
+          isOpen={isBoardManagerOpen}
+          onClose={() => setIsBoardManagerOpen(false)}
+          boards={boards}
+          activeBoardId={activeBoardId}
+          onCreateBoard={handleCreateBoard}
+          onSelectBoard={setActiveBoard}
+          onRenameBoard={renameBoard}
+          onDeleteBoard={removeBoard}
         />
       )}
     </div>

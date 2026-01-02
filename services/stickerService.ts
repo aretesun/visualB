@@ -36,7 +36,7 @@ export class StickerService {
         width: CONSTANTS.DEFAULT_STICKER_SIZE,
         height: CONSTANTS.DEFAULT_STICKER_SIZE,
       },
-      zIndex: 1000 + currentInstanceCount,
+      zIndex: CONSTANTS.Z_INDEX.STICKER_BASE + currentInstanceCount,
     };
   }
 

@@ -7,11 +7,13 @@ interface CardImageProps {
   imageWidth?: number;
   imageHeight?: number;
   imageOffset?: Position;
+  isEditing: boolean;
   isImageLocked: boolean;
   isEmpty: boolean;
   onImageOffsetChange: (offset: Position) => void;
   onBringToFront: () => void;
   onAddImageClick: () => void;
+  onEditImageClick: () => void;
   imageAddButtonRef: React.RefObject<HTMLDivElement>;
   imageRef: React.RefObject<HTMLDivElement>;
 }
@@ -25,11 +27,13 @@ const CardImage: React.FC<CardImageProps> = ({
   imageWidth = 232,
   imageHeight = 160,
   imageOffset,
+  isEditing,
   isImageLocked,
   isEmpty,
   onImageOffsetChange,
   onBringToFront,
   onAddImageClick,
+  onEditImageClick,
   imageAddButtonRef,
   imageRef,
 }) => {
@@ -247,6 +251,19 @@ const CardImage: React.FC<CardImageProps> = ({
           height: imageHeight,
         }}
       >
+        {isEditing && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditImageClick();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute top-2 right-2 px-2 py-1 text-xs bg-black/60 text-white rounded shadow hover:bg-black/75"
+            aria-label="Change image"
+          >
+            {t.card.changeImage || '이미지 변경'}
+          </button>
+        )}
         <img
           ref={imgElementRef}
           src={imageUrl}
@@ -265,8 +282,11 @@ const CardImage: React.FC<CardImageProps> = ({
     );
   }
 
-  // 빈 카드인 경우 이미지 추가 버튼 표시
-  if (isEmpty) {
+  // 이미지가 없을 때는 편집 모드에서만 추가 버튼 표시
+  if (!imageUrl) {
+    if (!isEditing) {
+      return null;
+    }
     return (
       <div
         ref={imageAddButtonRef}
@@ -292,6 +312,7 @@ export default React.memo(CardImage, (prev, next) => {
     prev.imageOffset?.x === next.imageOffset?.x &&
     prev.imageOffset?.y === next.imageOffset?.y &&
     prev.isImageLocked === next.isImageLocked &&
-    prev.isEmpty === next.isEmpty
+    prev.isEmpty === next.isEmpty &&
+    prev.isEditing === next.isEditing
   );
 });

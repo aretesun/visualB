@@ -17,6 +17,8 @@ export const useCards = () => {
   const deleteCardFromStore = useCanvasStore(state => state.deleteCard);
   const setCards = useCanvasStore(state => state.setCards);
   const bringCardToFront = useCanvasStore(state => state.bringCardToFront);
+  const bringCardForward = useCanvasStore(state => state.bringCardForward);
+  const sendCardBackward = useCanvasStore(state => state.sendCardBackward);
 
   /**
    * 새 카드 추가
@@ -55,6 +57,20 @@ export const useCards = () => {
   const bringToFront = useCallback((id: number) => {
     bringCardToFront(id);
   }, [bringCardToFront]);
+
+  /**
+   * 레이어 한 단계 올리기
+   */
+  const bringForward = useCallback((id: number) => {
+    bringCardForward(id);
+  }, [bringCardForward]);
+
+  /**
+   * 레이어 한 단계 내리기
+   */
+  const sendBackward = useCallback((id: number) => {
+    sendCardBackward(id);
+  }, [sendCardBackward]);
 
   /**
    * 여러 카드를 함께 이동
@@ -117,6 +133,8 @@ export const useCards = () => {
     updateCard,
     deleteCard,
     bringToFront,
+    bringForward,
+    sendBackward,
     moveMultiple,
     cloneCard,
     scaleToViewport,

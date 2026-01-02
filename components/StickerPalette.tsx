@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Sticker } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONSTANTS } from '../utils/constants';
 
 interface StickerPaletteProps {
   isExpanded: boolean;
@@ -130,7 +131,8 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
       {!isExpanded && (
         <button
           onClick={onToggle}
-          className="fixed left-4 top-4 p-3 bg-white/20 backdrop-blur-md text-white hover:bg-white/30 rounded-full transition-colors shadow-lg z-40 text-xl"
+          className="fixed left-4 top-4 p-3 bg-white/20 backdrop-blur-md text-white hover:bg-white/30 rounded-full transition-colors shadow-lg text-xl"
+          style={{ zIndex: CONSTANTS.Z_INDEX.UI_ELEMENTS }}
           aria-label="Open sticker palette"
           title={t.stickerPalette?.open || 'Open Stickers'}
         >
@@ -140,7 +142,7 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
 
       {/* 펼쳐진 상태 - 사이드바 */}
       {isExpanded && (
-        <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl z-40">
+        <div className="fixed left-0 top-0 h-[calc(100vh-6.25rem)] w-64 bg-white/10 backdrop-blur-xl border-r border-white/20 shadow-xl" style={{ zIndex: CONSTANTS.Z_INDEX.UI_ELEMENTS }}>
           <div className="h-full flex flex-col">
             {/* 헤더 */}
             <div className="flex items-center justify-between p-4 border-b border-white/20 select-none">
@@ -233,7 +235,8 @@ const StickerPalette: React.FC<StickerPaletteProps> = ({
       {/* 추가 모달 */}
       {showAddModal && (
         <div
-          className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-60"
+          className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          style={{ zIndex: CONSTANTS.Z_INDEX.MODAL }}
           onClick={() => setShowAddModal(false)}
         >
           <div

@@ -8,15 +8,21 @@ export interface Size {
   height: number;
 }
 
-export interface Card {
-  id: number;
+export interface CanvasObjectBase {
+  id: string | number;
   position: Position;
+  zIndex: number;
+}
+
+export interface Card extends CanvasObjectBase {
+  id: number;
   text?: string;      // 텍스트는 선택적
   imageUrl?: string;  // 이미지도 선택적
   imageWidth?: number;  // 이미지 너비 (선택적)
   imageHeight?: number; // 이미지 높이 (선택적)
   imageOffset?: Position; // 이미지 오프셋 (마스크 기능용)
   isNew?: boolean;    // 새로 생성된 카드 (자동 삭제 방지용)
+  color?: string;     // 카드 배경 색상 (테마)
 }
 
 // 레거시 타입 호환성을 위한 별칭
@@ -53,12 +59,10 @@ export interface Sticker {
   isPremade?: boolean;       // 기본 제공 스티커 여부
 }
 
-export interface StickerInstance {
+export interface StickerInstance extends CanvasObjectBase {
   id: string;                // 인스턴스 고유 ID
   stickerId: string;         // 원본 스티커 ID (palette에서)
   imageUrl: string;          // 이미지 (빠른 접근용)
-  position: Position;        // { x, y }
   size: Size;                // { width, height }
-  zIndex: number;            // 레이어 순서 (20-29: 카드(10)보다 위, UI 요소(30+)보다 아래)
   rotation?: number;         // 미래: 회전 각도
 }

@@ -5,6 +5,7 @@ export const en: Translations = {
   card: {
     placeholder: "What do you want?",
     addImage: "Add Image",
+    changeImage: "Change Image",
   },
 
   // Buttons
@@ -28,6 +29,7 @@ export const en: Translations = {
     title: "Settings",
     backup: "Backup",
     restore: "Restore",
+    boards: "Boards",
     language: "Language",
     korean: "한국어",
     english: "English",
@@ -102,6 +104,17 @@ export const en: Translations = {
     backgroundChange: "Change Background: Click refresh button to change background",
     buyMeCoffee: "☕ Buy Me a Coffee",
     madeWith: "Made with ❤️ by vision team",
+  },
+
+  boards: {
+    title: "Boards",
+    create: "Create",
+    open: "Open",
+    active: "Active",
+    defaultName: "My Board",
+    namePlaceholder: "Board name",
+    newPlaceholder: "New board name",
+    updatedAt: "Updated",
   },
 
   // Sticker Palette

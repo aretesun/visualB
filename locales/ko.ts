@@ -3,6 +3,7 @@ export const ko = {
   card: {
     placeholder: "무엇을 원하세요?",
     addImage: "이미지 추가",
+    changeImage: "이미지 변경",
   },
 
   // 버튼
@@ -26,6 +27,7 @@ export const ko = {
     title: "설정",
     backup: "백업하기",
     restore: "복원하기",
+    boards: "공간 관리",
     language: "언어 설정",
     korean: "한국어",
     english: "English",
@@ -100,6 +102,17 @@ export const ko = {
     backgroundChange: "배경 변경: 좌측 상단 새로고침 버튼으로 배경 변경",
     buyMeCoffee: "☕ 커피 한 잔 사주기",
     madeWith: "Made with ❤️ by vision team",
+  },
+
+  boards: {
+    title: "공간 관리",
+    create: "생성",
+    open: "열기",
+    active: "현재",
+    defaultName: "내 보드",
+    namePlaceholder: "공간 이름",
+    newPlaceholder: "새 공간 이름",
+    updatedAt: "업데이트",
   },
 
   // 스티커 팔레트

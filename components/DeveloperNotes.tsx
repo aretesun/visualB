@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONSTANTS } from '../utils/constants';
 
 interface DeveloperNotesProps {
   onClose: () => void;
@@ -9,7 +10,10 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
   const { t } = useLanguage();
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[100] bg-black/50 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      style={{ zIndex: CONSTANTS.Z_INDEX.MODAL }}
+    >
       <div className="bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         {/* 헤더 */}
         <div className="flex justify-between items-center mb-6">
@@ -33,6 +37,36 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
         {/* 업데이트 내용 */}
         <div className="space-y-6 text-white">
           {/* 최신 업데이트 */}
+          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <div className="flex items-center space-x-2 mb-3">
+              <span className="text-lg font-semibold">✨ v1.5.0</span>
+              <span className="text-sm text-white/60">2025-11-13</span>
+            </div>
+            <ul className="space-y-2 text-sm text-white/80 ml-4">
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>카드/스티커 레이어 정교화 (올리기/내리기)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>카드 색상 팔레트 추가</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>공간(보드) 생성/전환 기능</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>편집 UX 개선: 편집 모드 토글, 이미지 변경 버튼</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>모바일 스냅/버튼 정렬 및 사이즈 최적화</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* 이전 업데이트 */}
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center space-x-2 mb-3">
               <span className="text-lg font-semibold">🚀 v1.4.0</span>

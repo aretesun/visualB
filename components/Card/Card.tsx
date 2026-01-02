@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Card as CardType, Position, ResizeHandle } from '../../types';
 import { CONSTANTS } from '../../utils/constants';
 import { useDraggable } from '../../hooks/useDraggable';
+import { useRenderTracker } from '../../hooks/useRenderTracker';
 import ImageSourceDropdown from '../ImageSourceDropdown';
 import CardText from './CardText';
 import CardImage from './CardImage';
@@ -10,6 +11,7 @@ import CardControls from './CardControls';
 interface CardProps {
   item: CardType;
   index: number; // 렌더링 순서를 위한 인덱스
+  backgroundTone?: 'light' | 'dark';
   onPositionChange: (id: number, position: Position, delta?: Position) => void;
   onTextChange: (id: number, text: string) => void;
   onImageChange: (id: number, imageUrl: string) => void;
@@ -17,6 +19,8 @@ interface CardProps {
   onImageOffsetChange: (id: number, offset: Position) => void;
   onDelete: (id: number) => void;
   onBringToFront: (id: number) => void;
+  onLayerUp?: (id: number) => void;
+  onLayerDown?: (id: number) => void;
   onRequestUrlInput: (id: number) => void;
   onUpdate?: (id: number, updates: Partial<CardType>) => void;
   isUrlModalOpen?: boolean;
@@ -32,6 +36,7 @@ interface CardProps {
 const Card: React.FC<CardProps> = ({
   item,
   index,
+  backgroundTone = 'dark',
   onPositionChange,
   onTextChange,
   onImageChange,
@@ -39,6 +44,8 @@ const Card: React.FC<CardProps> = ({
   onImageOffsetChange,
   onDelete,
   onBringToFront,
+  onLayerUp,
+  onLayerDown,
   onRequestUrlInput,
   onUpdate,
   isUrlModalOpen = false,
@@ -49,9 +56,10 @@ const Card: React.FC<CardProps> = ({
   const itemRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const imageAddButtonRef = useRef<HTMLDivElement>(null);
-  const editImageButtonRef = useRef<HTMLButtonElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgElementRef = useRef<HTMLImageElement>(null);
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  useRenderTracker('Card', item.id);
 
   const { position, isDragging } = useDraggable({
     ref: itemRef,
@@ -65,27 +73,41 @@ const Card: React.FC<CardProps> = ({
       onPositionChange(item.id, newPosition);
     },
     disabled: false,
+    snapToGrid: isMobile ? CONSTANTS.SNAP_GRID_SIZE : 0,
   });
 
-  const [isEditingText, setIsEditingText] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSelectingFile, setIsSelectingFile] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ x: 0, y: 0 });
   const [isResizing, setIsResizing] = useState(false);
-  const [isEditingImage, setIsEditingImage] = useState(false);
   const [isImageLocked, setIsImageLocked] = useState(true);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const hasEditedRef = useRef(false); // 편집을 시작한 적이 있는지 추적
 
   const isEmpty = !item.text && !item.imageUrl;
+  const cardColor = CONSTANTS.CARD_COLORS.find((color) => color.id === item.color) || CONSTANTS.CARD_COLORS[0];
 
-  // 모바일 감지 (터치 디바이스)
-  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const boostBackgroundAlpha = (rgba: string, minAlpha: number) => {
+    const match = rgba.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+    if (!match) return rgba;
+    const r = Number(match[1]);
+    const g = Number(match[2]);
+    const b = Number(match[3]);
+    const a = Number(match[4]);
+    const nextAlpha = Math.max(a, minAlpha);
+    return `rgba(${r}, ${g}, ${b}, ${nextAlpha})`;
+  };
+
+  const cardBackground = backgroundTone === 'light'
+    ? boostBackgroundAlpha(cardColor.background, 0.28)
+    : cardColor.background;
 
   // 새 카드 생성 시 데스크톱에서는 자동으로 텍스트 편집 모드 진입
   useEffect(() => {
     if (item.isNew && !isMobile && isEmpty) {
-      setIsEditingText(true);
+      setIsEditing(true);
       hasEditedRef.current = true; // 편집 모드 진입 표시
     }
   }, [item.isNew, isMobile, isEmpty]);
@@ -100,19 +122,19 @@ const Card: React.FC<CardProps> = ({
   // 편집 모드 종료 시 빈 카드면 isNew 플래그 해제하여 삭제 준비
   // 단, 실제로 편집을 시작한 적이 있어야 함 (hasEditedRef.current === true)
   useEffect(() => {
-    if (item.isNew && !isEditingText && isEmpty && onUpdate && hasEditedRef.current) {
+    if (item.isNew && !isEditing && isEmpty && onUpdate && hasEditedRef.current) {
       onUpdate(item.id, { isNew: false });
     }
-  }, [item.isNew, isEditingText, isEmpty, onUpdate, item.id]);
+  }, [item.isNew, isEditing, isEmpty, onUpdate, item.id]);
 
   // 편집 모드를 벗어났을 때 텍스트도 이미지도 없으면 카드 삭제
   // 단, isNew 플래그가 true이면 삭제하지 않음 (새로 생성된 카드 보호)
   useEffect(() => {
-    const shouldDelete = !item.isNew && !isEditingText && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen;
+    const shouldDelete = !item.isNew && !isEditing && !item.text && !item.imageUrl && !isSelectingFile && !showDropdown && !isUrlModalOpen;
     if (shouldDelete) {
       onDelete(item.id);
     }
-  }, [item.isNew, isEditingText, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
+  }, [item.isNew, isEditing, item.text, item.imageUrl, isSelectingFile, showDropdown, isUrlModalOpen, item.id, onDelete]);
 
   const handleFocus = () => {
     onBringToFront(item.id);
@@ -131,9 +153,14 @@ const Card: React.FC<CardProps> = ({
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (itemRef.current && !itemRef.current.contains(event.target as Node)) {
         // 카드 외부 클릭 시, 빈 새 카드면 isNew 해제
-        if (item.isNew && !item.text && !item.imageUrl && !isEditingText && onUpdate) {
+        if (item.isNew && !item.text && !item.imageUrl && !isEditing && onUpdate) {
           onUpdate(item.id, { isNew: false });
         }
+        if (isEditing) {
+          setIsEditing(false);
+          setShowDropdown(false);
+        }
+        setShowColorPicker(false);
       }
     };
 
@@ -143,7 +170,7 @@ const Card: React.FC<CardProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
     };
-  }, [item.id, item.isNew, item.text, item.imageUrl, isEditingText, onUpdate]);
+  }, [item.id, item.isNew, item.text, item.imageUrl, isEditing, onUpdate]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (onSelect) {
@@ -211,13 +238,11 @@ const Card: React.FC<CardProps> = ({
         try {
           const compressedImage = await compressImage(file);
           onImageChange(item.id, compressedImage);
-          setIsEditingText(false);
         } catch (error) {
           console.error('이미지 압축 실패:', error);
           const reader = new FileReader();
           reader.onloadend = () => {
             onImageChange(item.id, reader.result as string);
-            setIsEditingText(false);
           };
           reader.readAsDataURL(file);
         }
@@ -231,14 +256,12 @@ const Card: React.FC<CardProps> = ({
       try {
         const compressedImage = await compressImage(file);
         onImageChange(item.id, compressedImage);
-        setIsEditingText(false);
         setIsSelectingFile(false);
       } catch (error) {
         console.error('이미지 압축 실패:', error);
         const reader = new FileReader();
         reader.onloadend = () => {
           onImageChange(item.id, reader.result as string);
-          setIsEditingText(false);
           setIsSelectingFile(false);
         };
         reader.readAsDataURL(file);
@@ -262,7 +285,7 @@ const Card: React.FC<CardProps> = ({
 
   const handleUploadFile = () => {
     setIsSelectingFile(true);
-    setIsEditingImage(false);
+    setShowDropdown(false);
 
     const input = fileInputRef.current;
     if (input) {
@@ -279,18 +302,17 @@ const Card: React.FC<CardProps> = ({
   const handleGenerateImage = () => {
     const imageGenerationUrl = 'https://aistudio.google.com/app/prompts?state=%7B%22ids%22:%5B%221aXi6YoflGlRUunosVM7ZBJ7zlxxEiX_s%22%5D,%22action%22:%22open%22,%22userId%22:%22107412687269922622473%22,%22resourceKeys%22:%7B%7D%7D&usp=sharing';
     window.open(imageGenerationUrl, '_blank');
-    setIsEditingImage(false);
+    setShowDropdown(false);
   };
 
   const handleAddByUrl = () => {
     onRequestUrlInput(item.id);
-    setIsEditingImage(false);
+    setShowDropdown(false);
   };
 
   const handleEditImage = () => {
-    setIsEditingImage(true);
-    if (editImageButtonRef.current) {
-      const rect = editImageButtonRef.current.getBoundingClientRect();
+    if (imageRef.current) {
+      const rect = imageRef.current.getBoundingClientRect();
       setDropdownPosition({
         x: rect.left,
         y: rect.bottom + 8,
@@ -300,7 +322,6 @@ const Card: React.FC<CardProps> = ({
   };
 
   const handleCloseEditImage = () => {
-    setIsEditingImage(false);
     setShowDropdown(false);
   };
 
@@ -433,14 +454,21 @@ const Card: React.FC<CardProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group bg-white/10 backdrop-blur-xl border p-3 ${isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
+      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group backdrop-blur-xl border p-3 overflow-visible ${isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
         } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${isResizing ? 'cursor-nwse-resize' : ''
-        } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : 'border-white/20'}`}
+        } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : ''}`}
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${cardWidth}px`,
-        zIndex: isDragging ? CONSTANTS.Z_INDEX.CARD_DRAGGING : Math.min(CONSTANTS.Z_INDEX.CARD_BASE + index, CONSTANTS.Z_INDEX.CARD_BASE + 9),
+        zIndex: isDragging
+          ? CONSTANTS.Z_INDEX.CARD_DRAGGING
+          : Math.min(
+            Math.max(typeof item.zIndex === 'number' ? item.zIndex : CONSTANTS.Z_INDEX.CARD_BASE + index, CONSTANTS.Z_INDEX.CARD_BASE),
+            CONSTANTS.Z_INDEX.CARD_MAX
+          ),
+        backgroundColor: cardBackground,
+        borderColor: isSelected ? undefined : cardColor.border,
         touchAction: 'none',
       }}
       tabIndex={0}
@@ -448,15 +476,16 @@ const Card: React.FC<CardProps> = ({
       {/* 텍스트 컴포넌트 */}
       <CardText
         text={item.text}
-        isEditing={isEditingText}
+        isEditing={isEditing}
         hasImage={!!item.imageUrl}
+        tone={backgroundTone}
         onTextChange={(text) => onTextChange(item.id, text)}
         onEditStart={() => {
           hasEditedRef.current = true; // 편집 시작 표시
-          setIsEditingText(true);
+          setIsEditing(true);
           setShowDropdown(false); // 텍스트 편집 시작 시 이미지 옵션창 닫기
         }}
-        onEditEnd={() => setIsEditingText(false)}
+        onEditEnd={() => setIsEditing(false)}
         onDelete={() => onDelete(item.id)}
       />
 
@@ -466,11 +495,13 @@ const Card: React.FC<CardProps> = ({
         imageWidth={item.imageWidth}
         imageHeight={item.imageHeight}
         imageOffset={item.imageOffset}
+        isEditing={isEditing}
         isImageLocked={isImageLocked}
         isEmpty={isEmpty}
         onImageOffsetChange={(offset) => onImageOffsetChange(item.id, offset)}
         onBringToFront={() => onBringToFront(item.id)}
         onAddImageClick={handleImageAddClick}
+        onEditImageClick={handleEditImage}
         imageAddButtonRef={imageAddButtonRef}
         imageRef={imageRef}
       />
@@ -494,21 +525,42 @@ const Card: React.FC<CardProps> = ({
         className="hidden"
       />
 
+      {showColorPicker && (
+        <div className="absolute bottom-14 right-2 bg-black/70 backdrop-blur-md border border-white/10 rounded-lg p-2 flex items-center space-x-2 z-30">
+          {CONSTANTS.CARD_COLORS.map((color) => (
+            <button
+              key={color.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdate?.(item.id, { color: color.id });
+                setShowColorPicker(false);
+              }}
+              className="w-7 h-7 rounded-full border border-white/40 shadow-sm"
+              style={{ backgroundColor: color.background }}
+              aria-label={`Set color ${color.label}`}
+              title={color.label}
+            />
+          ))}
+        </div>
+      )}
+
       {/* 컨트롤 버튼 */}
       <CardControls
         hasImage={!!item.imageUrl}
-        hasText={!!item.text}
-        isEditingText={isEditingText}
-        isEditingImage={isEditingImage}
+        isEditing={isEditing}
         isImageLocked={isImageLocked}
         isReadOnly={isReadOnly}
         onToggleLock={() => setIsImageLocked(!isImageLocked)}
-        onEditText={() => setIsEditingText(true)}
-        onSaveText={() => setIsEditingText(false)}
-        onEditImage={handleEditImage}
-        onCloseEditImage={handleCloseEditImage}
+        onStartEdit={() => setIsEditing(true)}
+        onSaveEdit={() => {
+          setIsEditing(false);
+          handleCloseEditImage();
+        }}
+        onChangeImage={handleEditImage}
         onDelete={() => onDelete(item.id)}
-        editImageButtonRef={editImageButtonRef}
+        onLayerUp={() => onLayerUp?.(item.id)}
+        onLayerDown={() => onLayerDown?.(item.id)}
+        onToggleColorPicker={() => setShowColorPicker((prev) => !prev)}
       />
 
       {/* 리사이즈 핸들 */}
@@ -616,6 +668,8 @@ export default React.memo(Card, (prev, next) => {
   if (prev.item.imageUrl !== next.item.imageUrl) return false;
   if (prev.item.imageWidth !== next.item.imageWidth) return false;
   if (prev.item.imageHeight !== next.item.imageHeight) return false;
+  if (prev.item.zIndex !== next.item.zIndex) return false;
+  if (prev.item.color !== next.item.color) return false;
   if (
     prev.item.imageOffset?.x !== next.item.imageOffset?.x ||
     prev.item.imageOffset?.y !== next.item.imageOffset?.y
@@ -625,5 +679,6 @@ export default React.memo(Card, (prev, next) => {
   if (prev.isSelected !== next.isSelected) return false;
   if (prev.isReadOnly !== next.isReadOnly) return false;
   if (prev.isUrlModalOpen !== next.isUrlModalOpen) return false;
+  if (prev.backgroundTone !== next.backgroundTone) return false;
   return true;
 });

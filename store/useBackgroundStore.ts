@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { STORAGE_KEYS } from '../utils/storageKeys';
 
 export interface CustomBackground {
   id: string;
@@ -17,6 +18,16 @@ export interface BackgroundSettings {
   randomInterval: 'refresh' | 'timed';
   timedIntervalMinutes: number;
 }
+
+export const DEFAULT_BACKGROUND_SETTINGS: BackgroundSettings = {
+  source: 'system',
+  customBackgrounds: [],
+  customMode: 'single',
+  selectedSingleId: null,
+  randomBackgroundIds: [],
+  randomInterval: 'refresh',
+  timedIntervalMinutes: 30,
+};
 
 interface BackgroundStore extends BackgroundSettings {
   // Actions
@@ -38,13 +49,7 @@ export const useBackgroundStore = create<BackgroundStore>()(
   persist(
     (set, get) => ({
       // Initial state
-      source: 'system',
-      customBackgrounds: [],
-      customMode: 'single',
-      selectedSingleId: null,
-      randomBackgroundIds: [],
-      randomInterval: 'refresh',
-      timedIntervalMinutes: 30,
+      ...DEFAULT_BACKGROUND_SETTINGS,
 
       // Actions
       setSource: (source) => set({ source }),
@@ -129,7 +134,7 @@ export const useBackgroundStore = create<BackgroundStore>()(
       },
     }),
     {
-      name: 'background-storage',
+      name: STORAGE_KEYS.BACKGROUND,
       partialize: (state) => ({
         source: state.source,
         customBackgrounds: state.customBackgrounds,

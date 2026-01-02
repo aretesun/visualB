@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlusIcon } from './Icons';
+import { CONSTANTS } from '../utils/constants';
 
 interface AddCardButtonProps {
   onAddCard: () => void;
@@ -14,8 +15,8 @@ const AddCardButton: React.FC<AddCardButtonProps> = ({ onAddCard }) => {
         e.stopPropagation();
         onAddCard();
       }}
-      className="group fixed bottom-6 right-6 sm:bottom-8 sm:right-8 p-4 bg-white/20 text-white rounded-full shadow-lg backdrop-blur-lg hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 hover:shadow-xl z-40"
-      style={{ touchAction: 'none' }}
+      className="group fixed bottom-6 right-6 sm:bottom-8 sm:right-8 p-4 bg-white/20 text-white rounded-full shadow-lg backdrop-blur-lg hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 hover:shadow-xl"
+      style={{ touchAction: 'none', zIndex: CONSTANTS.Z_INDEX.UI_ELEMENTS }}
       aria-label="Add new card"
     >
       <PlusIcon className="w-8 h-8 group-hover:rotate-90 transition-transform duration-300" />

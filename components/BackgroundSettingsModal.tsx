@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useBackgroundStore, CustomBackground } from '../store/useBackgroundStore';
 import { useLanguage } from '../contexts/LanguageContext';
+import { ImageUtils } from '../utils/imageUtils';
+import { StorageService } from '../services/storageService';
+import { CONSTANTS } from '../utils/constants';
 
 interface BackgroundSettingsModalProps {
   isOpen: boolean;
@@ -13,6 +16,7 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
   const [urlInput, setUrlInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const {
     source,
@@ -34,37 +38,88 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
 
   if (!isOpen) return null;
 
-  const handleAddByUrl = () => {
-    if (urlInput.trim()) {
-      const newBackground: CustomBackground = {
-        id: `bg_${Date.now()}`,
-        imageUrl: urlInput.trim(),
-        name: nameInput.trim() || 'Background',
-        addedAt: Date.now(),
-      };
-      addCustomBackground(newBackground);
-      setUrlInput('');
-      setNameInput('');
-      setShowAddForm(false);
+  const maxCustomBackgrounds = 20;
+  const storageUsageMB = StorageService.getUsage();
+  const isStorageTight = storageUsageMB >= 4.5;
+  const isMaxReached = customBackgrounds.length >= maxCustomBackgrounds;
+
+  const resetError = () => setErrorMessage('');
+
+  const isValidImageUrl = (value: string) => {
+    if (value.startsWith('data:image/')) return true;
+    try {
+      // URL 생성 가능 여부만 확인 (확장자 제한 없음)
+      new URL(value);
+      return true;
+    } catch {
+      return false;
     }
+  };
+
+  const handleAddByUrl = () => {
+    const trimmedUrl = urlInput.trim();
+    if (!trimmedUrl) return;
+
+    if (isMaxReached) {
+      setErrorMessage(t.backgroundSettings?.maxReached || '배경은 최대 20개까지 추가할 수 있습니다.');
+      return;
+    }
+
+    if (!isValidImageUrl(trimmedUrl)) {
+      setErrorMessage(t.backgroundSettings?.invalidUrl || '유효한 이미지 URL을 입력해주세요.');
+      return;
+    }
+
+    const newBackground: CustomBackground = {
+      id: `bg_${Date.now()}`,
+      imageUrl: trimmedUrl,
+      name: nameInput.trim() || 'Background',
+      addedAt: Date.now(),
+    };
+    addCustomBackground(newBackground);
+    setUrlInput('');
+    setNameInput('');
+    setShowAddForm(false);
+    resetError();
   };
 
   const handleAddByFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const newBackground: CustomBackground = {
-          id: `bg_${Date.now()}`,
-          imageUrl: reader.result as string,
-          name: nameInput.trim() || file.name.replace(/\.[^/.]+$/, ''),
-          addedAt: Date.now(),
-        };
-        addCustomBackground(newBackground);
-        setNameInput('');
-        setShowAddForm(false);
+    if (!file) return;
+
+    if (isMaxReached) {
+      setErrorMessage(t.backgroundSettings?.maxReached || '배경은 최대 20개까지 추가할 수 있습니다.');
+      e.target.value = '';
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage(t.backgroundSettings?.invalidFile || '이미지 파일만 업로드할 수 있습니다.');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const compressed = await ImageUtils.compress(file, {
+        maxWidth: 1920,
+        maxHeight: 1080,
+        quality: 0.8,
+      });
+      const newBackground: CustomBackground = {
+        id: `bg_${Date.now()}`,
+        imageUrl: compressed,
+        name: nameInput.trim() || file.name.replace(/\.[^/.]+$/, ''),
+        addedAt: Date.now(),
       };
-      reader.readAsDataURL(file);
+      addCustomBackground(newBackground);
+      setNameInput('');
+      setShowAddForm(false);
+      resetError();
+    } catch (error) {
+      console.error('Failed to compress background image:', error);
+      setErrorMessage(t.backgroundSettings?.compressFailed || '이미지 처리에 실패했습니다.');
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -72,7 +127,8 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm z-60"
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      style={{ zIndex: CONSTANTS.Z_INDEX.MODAL }}
       onClick={onClose}
     >
       <div
@@ -172,6 +228,11 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
                       />
                       <span className="text-white text-sm truncate">{bg.name}</span>
                     </label>
+                    {selectedSingleId === bg.id && (
+                      <span className="ml-2 px-2 py-0.5 text-xs text-white bg-emerald-500/70 rounded-full">
+                        {t.backgroundSettings?.currentApplied || '현재 적용 중'}
+                      </span>
+                    )}
                     <button
                       onClick={() => deleteCustomBackground(bg.id)}
                       className="p-1.5 bg-red-500/80 hover:bg-red-500 rounded ml-2 touch-manipulation"
@@ -296,8 +357,12 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
 
             {/* Add Background Button */}
             <button
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="w-full py-2 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 mt-4"
+              onClick={() => {
+                setShowAddForm(!showAddForm);
+                resetError();
+              }}
+              disabled={isMaxReached}
+              className="w-full py-2 px-4 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center justify-center space-x-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -315,7 +380,10 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
                   <input
                     type="text"
                     value={nameInput}
-                    onChange={(e) => setNameInput(e.target.value)}
+                    onChange={(e) => {
+                      setNameInput(e.target.value);
+                      resetError();
+                    }}
                     placeholder={t.backgroundSettings?.namePlaceholder || '배경 이름'}
                     className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
                   />
@@ -328,7 +396,10 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
                   <input
                     type="text"
                     value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
+                    onChange={(e) => {
+                      setUrlInput(e.target.value);
+                      resetError();
+                    }}
                     placeholder="https://example.com/background.jpg"
                     className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
                   />
@@ -346,7 +417,10 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
                     className="hidden"
                   />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      resetError();
+                      fileInputRef.current?.click();
+                    }}
                     className="w-full py-2 px-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-lg transition-colors"
                   >
                     📁 {t.backgroundSettings?.chooseFile || '파일 선택'}
@@ -368,6 +442,20 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
                     {t.backgroundSettings?.addConfirm || '추가'}
                   </button>
                 </div>
+
+                {errorMessage && (
+                  <p className="mt-3 text-sm text-red-300">
+                    {errorMessage}
+                  </p>
+                )}
+
+                {(isStorageTight || isMaxReached) && (
+                  <p className="mt-3 text-xs text-yellow-200/90">
+                    {isMaxReached
+                      ? (t.backgroundSettings?.maxReached || '배경은 최대 20개까지 추가할 수 있습니다.')
+                      : (t.backgroundSettings?.storageWarning || '저장 공간이 부족할 수 있어요. 오래된 배경을 정리해주세요.')}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -377,6 +465,12 @@ const BackgroundSettingsModal: React.FC<BackgroundSettingsModalProps> = ({ isOpe
         {source === 'custom' && customBackgrounds.length === 0 && !showAddForm && (
           <div className="text-center text-white/60 text-sm py-6">
             <p>{t.backgroundSettings?.emptyHint || '배경을 추가해주세요'}</p>
+          </div>
+        )}
+
+        {source === 'custom' && customBackgrounds.length > 0 && (
+          <div className="mt-4 text-xs text-white/60">
+            {t.backgroundSettings?.storageUsage || '저장공간 사용'}: {storageUsageMB.toFixed(2)}MB / 5MB
           </div>
         )}
 

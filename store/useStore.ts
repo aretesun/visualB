@@ -1,135 +1,40 @@
 import { create } from 'zustand';
-import { devtools, persist, createJSONStorage, StateStorage } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { Card, Position, Size, Sticker, StickerInstance } from '../types';
 import { CONSTANTS } from '../utils/constants';
-
-// ============================================
-// IndexedDB Storage Adapter
-// ============================================
-const DB_NAME = 'vision-board-db';
-const STORE_NAME = 'key-value-store';
-const DB_VERSION = 1;
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-
-    request.onsuccess = (event) => {
-      resolve((event.target as IDBOpenDBRequest).result);
-    };
-
-    request.onerror = (event) => {
-      reject((event.target as IDBOpenDBRequest).error);
-    };
-  });
-}
-
-async function getFromDB(key: string): Promise<string | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(key);
-
-    request.onsuccess = () => {
-      resolve(request.result || null);
-    };
-
-    request.onerror = () => {
-      reject(request.error);
-    };
-  });
-}
-
-async function saveToDB(key: string, value: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(value, key);
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      reject(request.error);
-    };
-  });
-}
-
-async function removeFromDB(key: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(key);
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      reject(request.error);
-    };
-  });
-}
-
-const indexedDBStorage: StateStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    try {
-      // 1. Try to get from IndexedDB
-      const value = await getFromDB(name);
-
-      if (value !== null) {
-        return value;
-      }
-
-      // 2. If not in DB, check localStorage (Migration)
-      const localValue = localStorage.getItem(name);
-      if (localValue) {
-        console.log(`📦 Migrating ${name} from localStorage to IndexedDB...`);
-        // Async migration: save to DB and remove from localStorage
-        await saveToDB(name, localValue);
-        localStorage.removeItem(name);
-        console.log(`✅ Migration complete for ${name}`);
-        return localValue;
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error getting item from IndexedDB:', error);
-      return null;
-    }
-  },
-
-  setItem: async (name: string, value: string): Promise<void> => {
-    try {
-      await saveToDB(name, value);
-    } catch (error) {
-      console.error('Error setting item to IndexedDB:', error);
-    }
-  },
-
-  removeItem: async (name: string): Promise<void> => {
-    try {
-      await removeFromDB(name);
-    } catch (error) {
-      console.error('Error removing item from IndexedDB:', error);
-    }
-  },
-};
+import { STORAGE_KEYS } from '../utils/storageKeys';
+import { indexedDBStorage } from './indexedDBStorage';
 
 // ============================================
 // Canvas Store (카드, 뷰포트, 배경)
 // ============================================
+const normalizeCardZIndices = (cards: Card[]): Card[] => {
+  const sorted = [...cards].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+  return sorted.map((card, index) => ({
+    ...card,
+    zIndex: CONSTANTS.Z_INDEX.CARD_BASE + index,
+  }));
+};
+
+const ensureCardZIndices = (cards: Card[]): Card[] => {
+  const hasMissing = cards.some(card => typeof card.zIndex !== 'number');
+  if (!hasMissing) {
+    return cards;
+  }
+  return normalizeCardZIndices(cards);
+};
+
+const ensureStickerZIndices = (instances: StickerInstance[]): StickerInstance[] => {
+  const hasMissing = instances.some(inst => typeof inst.zIndex !== 'number');
+  if (!hasMissing) {
+    return instances;
+  }
+  return instances.map((inst, index) => ({
+    ...inst,
+    zIndex: CONSTANTS.Z_INDEX.STICKER_BASE + index,
+  }));
+};
+
 interface CanvasState {
   // 상태
   cards: Card[];
@@ -143,6 +48,8 @@ interface CanvasState {
   deleteCard: (id: number) => void;
   setCards: (cards: Card[]) => void;
   bringCardToFront: (id: number) => void;
+  bringCardForward: (id: number) => void;
+  sendCardBackward: (id: number) => void;
   setViewport: (size: Size) => void;
   setBackground: (url: string) => void;
   refreshBackground: () => void;
@@ -169,18 +76,26 @@ export const useCanvasStore = create<CanvasState>()(
             return;
           }
 
+          const maxZIndex = Math.max(
+            ...state.cards.map((c) => c.zIndex || CONSTANTS.Z_INDEX.CARD_BASE),
+            CONSTANTS.Z_INDEX.CARD_BASE - 1
+          );
+          const nextZIndex = Math.min(maxZIndex + 1, CONSTANTS.Z_INDEX.CARD_MAX);
+
           const newCard: Card = {
             id: state.nextId,
             position: card?.position || {
               x: state.viewport.width / 2 - CONSTANTS.DEFAULT_CARD_WIDTH / 2,
               y: state.viewport.height / 2 - CONSTANTS.DEFAULT_CARD_HEIGHT / 2,
             },
+            zIndex: card?.zIndex ?? nextZIndex,
             text: card?.text,
             imageUrl: card?.imageUrl,
             imageWidth: card?.imageWidth,
             imageHeight: card?.imageHeight,
             imageOffset: card?.imageOffset,
             isNew: card?.isNew !== undefined ? card.isNew : true, // 기본값: 새 카드
+            color: card?.color ?? 'default',
           };
 
           set({
@@ -205,7 +120,7 @@ export const useCanvasStore = create<CanvasState>()(
 
         setCards: (cards) => {
           const maxId = cards.reduce((max, item) => Math.max(max, item.id), 0);
-          set({ cards, nextId: maxId + 1 });
+          set({ cards: ensureCardZIndices(cards), nextId: maxId + 1 });
         },
 
         bringCardToFront: (id) => {
@@ -213,8 +128,54 @@ export const useCanvasStore = create<CanvasState>()(
             const card = state.cards.find((c) => c.id === id);
             if (!card) return state;
 
+            const maxZIndex = Math.max(
+              ...state.cards.map((c) => c.zIndex || CONSTANTS.Z_INDEX.CARD_BASE),
+              CONSTANTS.Z_INDEX.CARD_BASE - 1
+            );
+            const nextZIndex = Math.min(maxZIndex + 1, CONSTANTS.Z_INDEX.CARD_MAX);
+
             return {
-              cards: [...state.cards.filter((c) => c.id !== id), card],
+              cards: state.cards.map((c) =>
+                c.id === id ? { ...c, zIndex: nextZIndex } : c
+              ),
+            };
+          });
+        },
+
+        bringCardForward: (id) => {
+          set((state) => {
+            const cardsWithZ = ensureCardZIndices(state.cards);
+            const card = cardsWithZ.find((c) => c.id === id);
+            if (!card) return state;
+            const higher = cardsWithZ
+              .filter((c) => c.zIndex > card.zIndex)
+              .sort((a, b) => a.zIndex - b.zIndex)[0];
+            if (!higher) return state;
+            return {
+              cards: cardsWithZ.map((c) => {
+                if (c.id === card.id) return { ...c, zIndex: higher.zIndex };
+                if (c.id === higher.id) return { ...c, zIndex: card.zIndex };
+                return c;
+              }),
+            };
+          });
+        },
+
+        sendCardBackward: (id) => {
+          set((state) => {
+            const cardsWithZ = ensureCardZIndices(state.cards);
+            const card = cardsWithZ.find((c) => c.id === id);
+            if (!card) return state;
+            const lower = cardsWithZ
+              .filter((c) => c.zIndex < card.zIndex)
+              .sort((a, b) => b.zIndex - a.zIndex)[0];
+            if (!lower) return state;
+            return {
+              cards: cardsWithZ.map((c) => {
+                if (c.id === card.id) return { ...c, zIndex: lower.zIndex };
+                if (c.id === lower.id) return { ...c, zIndex: card.zIndex };
+                return c;
+              }),
             };
           });
         },
@@ -239,13 +200,18 @@ export const useCanvasStore = create<CanvasState>()(
         canAddCard: () => get().cards.length < CONSTANTS.MAX_CARDS,
       }),
       {
-        name: 'canvas-storage',
+        name: STORAGE_KEYS.CANVAS,
         storage: createJSONStorage(() => indexedDBStorage),
         partialize: (state) => ({
           cards: state.cards,
           backgroundImage: state.backgroundImage,
           nextId: state.nextId,
         }),
+        onRehydrateStorage: () => (state) => {
+          if (state?.cards) {
+            state.setCards(ensureCardZIndices(state.cards));
+          }
+        },
       }
     )
   )
@@ -273,6 +239,8 @@ interface StickerState {
   deleteInstance: (id: string) => void;
   setInstances: (instances: StickerInstance[]) => void;
   bringInstanceToFront: (id: string) => void;
+  bringInstanceForward: (id: string) => void;
+  sendInstanceBackward: (id: string) => void;
 
   // 액션 - UI
   togglePalette: () => void;
@@ -332,7 +300,7 @@ export const useStickerStore = create<StickerState>()(
         },
 
         setInstances: (instances) => {
-          set({ instances });
+          set({ instances: ensureStickerZIndices(instances) });
         },
 
         bringInstanceToFront: (id) => {
@@ -356,6 +324,42 @@ export const useStickerStore = create<StickerState>()(
           });
         },
 
+        bringInstanceForward: (id) => {
+          set((state) => {
+            const instance = state.instances.find((i) => i.id === id);
+            if (!instance) return state;
+            const higher = state.instances
+              .filter((i) => i.zIndex > instance.zIndex)
+              .sort((a, b) => a.zIndex - b.zIndex)[0];
+            if (!higher) return state;
+            return {
+              instances: state.instances.map((inst) => {
+                if (inst.id === instance.id) return { ...inst, zIndex: higher.zIndex };
+                if (inst.id === higher.id) return { ...inst, zIndex: instance.zIndex };
+                return inst;
+              }),
+            };
+          });
+        },
+
+        sendInstanceBackward: (id) => {
+          set((state) => {
+            const instance = state.instances.find((i) => i.id === id);
+            if (!instance) return state;
+            const lower = state.instances
+              .filter((i) => i.zIndex < instance.zIndex)
+              .sort((a, b) => b.zIndex - a.zIndex)[0];
+            if (!lower) return state;
+            return {
+              instances: state.instances.map((inst) => {
+                if (inst.id === instance.id) return { ...inst, zIndex: lower.zIndex };
+                if (inst.id === lower.id) return { ...inst, zIndex: instance.zIndex };
+                return inst;
+              }),
+            };
+          });
+        },
+
         togglePalette: () => {
           set((state) => ({ isPaletteExpanded: !state.isPaletteExpanded }));
         },
@@ -371,12 +375,17 @@ export const useStickerStore = create<StickerState>()(
         canAddSticker: () => get().palette.length < CONSTANTS.MAX_STICKERS,
       }),
       {
-        name: 'sticker-storage',
+        name: STORAGE_KEYS.STICKERS,
         storage: createJSONStorage(() => indexedDBStorage),
         partialize: (state) => ({
           palette: state.palette,
           instances: state.instances,
         }),
+        onRehydrateStorage: () => (state) => {
+          if (state?.instances) {
+            state.setInstances(ensureStickerZIndices(state.instances));
+          }
+        },
       }
     )
   )

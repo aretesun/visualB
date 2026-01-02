@@ -20,6 +20,7 @@ export class CardService {
         vp,
         { width: CONSTANTS.DEFAULT_CARD_WIDTH, height: CONSTANTS.DEFAULT_CARD_HEIGHT }
       ),
+      zIndex: CONSTANTS.Z_INDEX.CARD_BASE,
     };
   }
 
@@ -84,7 +85,14 @@ export class CardService {
     const card = cards.find(c => c.id === id);
     if (!card) return cards;
 
-    return [...cards.filter(c => c.id !== id), card];
+    const maxZIndex = Math.max(
+      ...cards.map(c => c.zIndex || CONSTANTS.Z_INDEX.CARD_BASE),
+      CONSTANTS.Z_INDEX.CARD_BASE - 1
+    );
+
+    return cards.map(c =>
+      c.id === id ? { ...c, zIndex: Math.min(maxZIndex + 1, CONSTANTS.Z_INDEX.CARD_MAX) } : c
+    );
   }
 
   /**
@@ -125,6 +133,8 @@ export class CardService {
       imageWidth: card.imageWidth,
       imageHeight: card.imageHeight,
       imageOffset: card.imageOffset,
+      zIndex: card.zIndex,
+      color: card.color,
     };
   }
 

@@ -5,6 +5,7 @@ interface CardTextProps {
   text?: string;
   isEditing: boolean;
   hasImage: boolean;
+  tone: 'light' | 'dark';
   onTextChange: (text: string) => void;
   onEditStart: () => void;
   onEditEnd: () => void;
@@ -19,6 +20,7 @@ const CardText: React.FC<CardTextProps> = ({
   text,
   isEditing,
   hasImage,
+  tone,
   onTextChange,
   onEditStart,
   onEditEnd,
@@ -49,13 +51,10 @@ const CardText: React.FC<CardTextProps> = ({
   const handleSave = () => {
     if (editText.trim()) {
       onTextChange(editText);
-      onEditEnd();
     } else if (!hasImage) {
-      // 텍스트도 없고 이미지도 없으면 편집 모드만 종료
-      onEditEnd();
+      onTextChange('');
     } else {
-      // 이미지는 있는데 텍스트가 없으면 그냥 편집 모드만 종료
-      onEditEnd();
+      onTextChange('');
     }
   };
 
@@ -74,10 +73,16 @@ const CardText: React.FC<CardTextProps> = ({
     }
   };
 
-  // 편집 중이 아니고 텍스트도 없으면 null 반환 (이미지가 있는 경우 제외)
-  if (!isEditing && !text && hasImage) {
+  if (!isEditing && !text) {
     return null;
   }
+
+  const textClass = tone === 'light' ? 'text-slate-900' : 'text-white';
+  const placeholderClass = tone === 'light' ? 'placeholder-slate-500' : 'placeholder-white/40';
+  const hintClass = tone === 'light' ? 'text-slate-500 hover:text-slate-700' : 'text-white/30 hover:text-white/50';
+  const textShadow = tone === 'light'
+    ? '0 1px 2px rgba(255, 255, 255, 0.6)'
+    : '0 1px 2px rgba(0, 0, 0, 0.6)';
 
   return (
     <div className="flex-1 mb-3">
@@ -90,12 +95,14 @@ const CardText: React.FC<CardTextProps> = ({
           onKeyDown={handleKeyDown}
           placeholder={t.card.placeholder}
           maxLength={300}
-          className="w-full h-24 bg-transparent text-white placeholder-white/40 focus:outline-none resize-none"
+          className={`w-full h-24 bg-transparent focus:outline-none resize-none ${textClass} ${placeholderClass}`}
+          style={{ textShadow }}
         />
       ) : text ? (
         <p
           onClick={onEditStart}
-          className="text-white text-base font-light break-words cursor-text"
+          className={`text-base font-light break-words cursor-text ${textClass}`}
+          style={{ textShadow }}
         >
           {text}
         </p>
@@ -114,7 +121,7 @@ const CardText: React.FC<CardTextProps> = ({
         // 데스크톱: 빈 영역 클릭 시 편집 모드
         <div
           onClick={onEditStart}
-          className="w-full h-12 flex items-center justify-center text-white/30 hover:text-white/50 cursor-text transition-colors"
+          className={`w-full h-12 flex items-center justify-center cursor-text transition-colors ${hintClass}`}
         >
           <span className="text-sm">{t.card.placeholder || '텍스트를 입력하세요...'}</span>
         </div>
@@ -127,6 +134,7 @@ export default React.memo(CardText, (prev, next) => {
   return (
     prev.text === next.text &&
     prev.isEditing === next.isEditing &&
-    prev.hasImage === next.hasImage
+    prev.hasImage === next.hasImage &&
+    prev.tone === next.tone
   );
 });

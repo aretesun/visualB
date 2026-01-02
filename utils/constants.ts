@@ -32,18 +32,22 @@ export const CONSTANTS = {
   // 터치 타겟 (모바일 최적화)
   MIN_TOUCH_TARGET: 44,
 
+  // 캔버스 스냅 그리드 (모바일)
+  SNAP_GRID_SIZE: 8,
+
   // z-index 계층 구조 (낮은 순서 -> 높은 순서)
   Z_INDEX: {
-    CARD_BASE: 10,              // 카드 기본 (10~19)
-    STICKER_BASE: 20,           // 스티커 기본 (20~29, 카드보다 위)
-    STICKER_MAX: 29,            // 스티커 최대값
-    TOOLBAR: 30,                // 상단 툴바
-    NOTIFICATION: 35,           // 공유 보기 알림
-    UI_ELEMENTS: 40,            // 고정 UI 요소 (팔레트, 설정, 카드 추가 버튼)
-    CARD_DRAGGING: 45,          // 카드 드래그 중 (고정 UI보다 위)
-    STICKER_DRAGGING: 45,       // 스티커 드래그 중 (고정 UI보다 위)
-    DRAG_GHOST: 50,             // 드래그 고스트 이미지
-    MODAL: 60,                  // 모달 (최상위)
+    CARD_BASE: 10,              // 카드 기본 (10~999)
+    CARD_MAX: 999,              // 카드 최대 z-index
+    STICKER_BASE: 1000,         // 스티커 기본 (1000~1999, 카드보다 위)
+    STICKER_MAX: 1999,          // 스티커 최대값
+    TOOLBAR: 2000,              // 상단 툴바
+    NOTIFICATION: 2100,         // 공유 보기 알림
+    UI_ELEMENTS: 2200,          // 고정 UI 요소 (팔레트, 설정, 카드 추가 버튼)
+    CARD_DRAGGING: 2300,        // 카드 드래그 중 (고정 UI보다 위)
+    STICKER_DRAGGING: 2300,     // 스티커 드래그 중 (고정 UI보다 위)
+    DRAG_GHOST: 2400,           // 드래그 고스트 이미지
+    MODAL: 3000,                // 모달 (최상위)
   } as const,
 
   // 리사이즈 핸들 방향
@@ -60,10 +64,10 @@ export const CONSTANTS = {
 
   // 로컬 스토리지 키
   STORAGE_KEYS: {
-    CARDS: 'visionBoardItems',
-    STICKERS: 'stickerPalette',
-    STICKER_INSTANCES: 'stickerInstances',
-    BACKGROUND: 'backgroundImage',
+    CANVAS: 'canvas-storage',
+    STICKERS: 'sticker-storage',
+    BACKGROUND: 'background-storage',
+    BOARDS: 'board-storage',
   },
 
   // API
@@ -102,6 +106,15 @@ export const CONSTANTS = {
     'https://images.unsplash.com/photo-1552733407-5d5c46c3bb3b?q=80&w=2080&auto=format&fit=crop', // 중국 여행
     'https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=2070&auto=format&fit=crop', // 프라하
   ],
+
+  // 카드 기본 팔레트
+  CARD_COLORS: [
+    { id: 'default', label: 'Glass', background: 'rgba(255, 255, 255, 0.1)', border: 'rgba(255, 255, 255, 0.2)' },
+    { id: 'peach', label: 'Peach', background: 'rgba(255, 197, 158, 0.25)', border: 'rgba(255, 197, 158, 0.45)' },
+    { id: 'mint', label: 'Mint', background: 'rgba(170, 255, 225, 0.22)', border: 'rgba(170, 255, 225, 0.45)' },
+    { id: 'sky', label: 'Sky', background: 'rgba(168, 218, 255, 0.22)', border: 'rgba(168, 218, 255, 0.45)' },
+    { id: 'sand', label: 'Sand', background: 'rgba(248, 225, 176, 0.22)', border: 'rgba(248, 225, 176, 0.45)' },
+  ] as const,
 } as const;
 
 export type Constants = typeof CONSTANTS;

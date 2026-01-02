@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import DeveloperNotes from './DeveloperNotes';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONSTANTS } from '../utils/constants';
 
 interface LinkItem {
   title: string;
@@ -33,7 +34,7 @@ const LinksMenu: React.FC = () => {
 
   return (
     <>
-      <div className="fixed top-6 right-6 z-40 flex space-x-3">
+      <div className="fixed top-6 right-6 flex space-x-3" style={{ zIndex: CONSTANTS.Z_INDEX.UI_ELEMENTS }}>
         {/* 개발자 노트 버튼 */}
         <button
           onClick={() => setShowDeveloperNotes(true)}
@@ -58,7 +59,7 @@ const LinksMenu: React.FC = () => {
 
       {/* 링크 메뉴 */}
       {isOpen && (
-        <div className="fixed top-20 right-6 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[200px]">
+        <div className="fixed top-20 right-6 bg-white/10 backdrop-blur-xl rounded-lg shadow-2xl border border-white/20 p-3 min-w-[200px]" style={{ zIndex: CONSTANTS.Z_INDEX.UI_ELEMENTS }}>
           <div className="flex flex-col space-y-2">
             {links.map((link, index) => (
               <a

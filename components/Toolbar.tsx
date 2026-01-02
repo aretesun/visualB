@@ -2,14 +2,21 @@
 import React, { useState } from 'react';
 import { RefreshCwIcon, ShareIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONSTANTS } from '../utils/constants';
 
 interface ToolbarProps {
   onRefreshBackground: () => void;
   onShareClick: () => void;
   isSharedView?: boolean; // 공유 보기 모드
+  showRefreshBackground?: boolean;
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, isSharedView = false }) => {
+const Toolbar: React.FC<ToolbarProps> = ({
+  onRefreshBackground,
+  onShareClick,
+  isSharedView = false,
+  showRefreshBackground = true,
+}) => {
   const { t } = useLanguage();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -26,35 +33,40 @@ const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, is
   };
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 p-2 bg-white/10 backdrop-blur-md rounded-full shadow-lg flex items-center space-x-2 z-20">
+    <div
+      className="fixed top-4 left-1/2 -translate-x-1/2 px-2 py-1.5 sm:p-2 bg-white/10 backdrop-blur-md rounded-full shadow-lg flex items-center space-x-1 sm:space-x-2"
+      style={{ zIndex: CONSTANTS.Z_INDEX.TOOLBAR }}
+    >
       <h1 className="text-white font-bold text-lg px-3 hidden sm:block">
         {isSharedView ? `👀 ${t.toolbar.sharedTitle}` : t.toolbar.title}
       </h1>
       {!isSharedView && (
         <>
-          <button
-            onClick={handleRefresh}
-            onTouchEnd={(e) => {
-              if (isRefreshing) return;
-              e.preventDefault();
-              e.stopPropagation();
-              handleRefresh();
-            }}
-            disabled={isRefreshing}
-            className="group relative p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-            style={{ touchAction: 'none' }}
-            aria-label="Refresh background"
-          >
-            <RefreshCwIcon
-              className={`w-5 h-5 transition-transform duration-500 ${
-                isRefreshing ? 'animate-spin' : 'group-hover:rotate-90'
-              }`}
-            />
-            {/* Tooltip */}
-            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              {t.toolbar?.refreshBackground || '배경 새로고침'}
-            </span>
-          </button>
+          {showRefreshBackground && (
+            <button
+              onClick={handleRefresh}
+              onTouchEnd={(e) => {
+                if (isRefreshing) return;
+                e.preventDefault();
+                e.stopPropagation();
+                handleRefresh();
+              }}
+              disabled={isRefreshing}
+            className="group relative p-2.5 sm:p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              style={{ touchAction: 'none' }}
+              aria-label="Refresh background"
+            >
+              <RefreshCwIcon
+                className={`w-5 h-5 transition-transform duration-500 ${
+                  isRefreshing ? 'animate-spin' : 'group-hover:rotate-90'
+                }`}
+              />
+              {/* Tooltip */}
+              <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                {t.toolbar?.refreshBackground || '배경 새로고침'}
+              </span>
+            </button>
+          )}
           <button
             onClick={onShareClick}
             onTouchEnd={(e) => {
@@ -62,7 +74,7 @@ const Toolbar: React.FC<ToolbarProps> = ({ onRefreshBackground, onShareClick, is
               e.stopPropagation();
               onShareClick();
             }}
-            className="group relative p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
+            className="group relative p-2.5 sm:p-3 bg-white/20 text-white rounded-full hover:bg-white/30 active:bg-white/40 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-200"
             style={{ touchAction: 'none' }}
             aria-label="Share board"
           >

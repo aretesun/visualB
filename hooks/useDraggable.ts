@@ -9,9 +9,18 @@ interface DraggableOptions {
   onDragEnd?: (position: Position, delta?: Position) => void;
   onDragMove?: (position: Position, delta: Position) => void; // 드래그 중 실시간 콜백
   disabled?: boolean; // 드래그 비활성화
+  snapToGrid?: number; // 그리드 스냅 (px)
 }
 
-export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 }, onDragEnd, onDragMove, disabled = false }: DraggableOptions) => {
+export const useDraggable = ({
+  ref,
+  handleRef,
+  initialPosition = { x: 0, y: 0 },
+  onDragEnd,
+  onDragMove,
+  disabled = false,
+  snapToGrid = 0,
+}: DraggableOptions) => {
   const [position, setPosition] = useState<Position>(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const offsetRef = useRef<Position>({ x: 0, y: 0 });
@@ -81,6 +90,11 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
     let newX = e.clientX - offsetRef.current.x;
     let newY = e.clientY - offsetRef.current.y;
 
+    if (snapToGrid > 0) {
+      newX = Math.round(newX / snapToGrid) * snapToGrid;
+      newY = Math.round(newY / snapToGrid) * snapToGrid;
+    }
+
     // Boundary checks
     newX = Math.max(0, Math.min(newX, window.innerWidth - (ref.current?.offsetWidth || 0)));
     newY = Math.max(0, Math.min(newY, window.innerHeight - (ref.current?.offsetHeight || 0)));
@@ -97,7 +111,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
       };
       onDragMove(newPosition, delta);
     }
-  }, [ref, onDragMove]);
+  }, [ref, onDragMove, snapToGrid]);
 
   const onPointerUp = useCallback(() => {
     if (!isDraggingRef.current) return;
@@ -106,6 +120,11 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
     // ref로부터 최신 position 값 사용
     let finalX = positionRef.current.x;
     let finalY = positionRef.current.y;
+
+    if (snapToGrid > 0) {
+      finalX = Math.round(finalX / snapToGrid) * snapToGrid;
+      finalY = Math.round(finalY / snapToGrid) * snapToGrid;
+    }
 
     finalX = Math.max(0, Math.min(finalX, window.innerWidth - (ref.current?.offsetWidth || 0)));
     finalY = Math.max(0, Math.min(finalY, window.innerHeight - (ref.current?.offsetHeight || 0)));
@@ -117,7 +136,7 @@ export const useDraggable = ({ ref, handleRef, initialPosition = { x: 0, y: 0 },
       // delta를 전달하지 않음 - 드래그 종료 신호
       onDragEnd(finalPosition);
     }
-  }, [ref, onDragEnd]);
+  }, [ref, onDragEnd, snapToGrid]);
 
   useEffect(() => {
     const element = ref.current;

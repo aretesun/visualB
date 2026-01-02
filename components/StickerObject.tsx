@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { StickerInstance, Position, Size } from '../types';
 import { useDraggable } from '../hooks/useDraggable';
+import { useRenderTracker } from '../hooks/useRenderTracker';
 import { TrashIcon } from './Icons';
 import { CONSTANTS } from '../utils/constants';
 
@@ -11,6 +12,8 @@ interface StickerObjectProps {
   onSizeChange: (id: string, size: Size) => void;
   onDelete: (id: string) => void;
   onBringToFront: (id: string) => void;
+  onLayerUp?: (id: string) => void;
+  onLayerDown?: (id: string) => void;
   isReadOnly?: boolean;
   isSelected?: boolean;
   onSelect?: (id: string, isCtrlPressed: boolean) => void;
@@ -23,11 +26,15 @@ const StickerObject: React.FC<StickerObjectProps> = ({
   onSizeChange,
   onDelete,
   onBringToFront,
+  onLayerUp,
+  onLayerDown,
   isReadOnly = false,
   isSelected = false,
   onSelect
 }) => {
   const stickerRef = useRef<HTMLDivElement>(null);
+  const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  useRenderTracker('Sticker', sticker.id);
 
   const { position, isDragging } = useDraggable({
     ref: stickerRef,
@@ -43,6 +50,7 @@ const StickerObject: React.FC<StickerObjectProps> = ({
       onPositionChange(sticker.id, newPosition);
     },
     disabled: isReadOnly,
+    snapToGrid: isMobile ? CONSTANTS.SNAP_GRID_SIZE : 0,
   });
 
   const handleFocus = () => {
@@ -216,20 +224,52 @@ const StickerObject: React.FC<StickerObjectProps> = ({
         }}
       />
 
-      {/* 삭제 버튼 - 읽기 전용 모드에서 숨김 */}
+      {/* 컨트롤 버튼 - 읽기 전용 모드에서 숨김 */}
       {!isReadOnly && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-2 -right-10 flex flex-col gap-2 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 pointer-events-auto">
+            <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onLayerUp?.(sticker.id);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="min-w-[30px] min-h-[30px] p-1.5 sm:p-1 bg-white/15 hover:bg-white/25 rounded-md shadow-lg touch-manipulation"
+            aria-label="Bring sticker forward"
+            title="레이어 올리기"
+          >
+            <svg className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v12m0-12l-4 4m4-4l4 4M5 19h14" />
+            </svg>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onLayerDown?.(sticker.id);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="min-w-[30px] min-h-[30px] p-1.5 sm:p-1 bg-white/15 hover:bg-white/25 rounded-md shadow-lg touch-manipulation"
+            aria-label="Send sticker backward"
+            title="레이어 내리기"
+          >
+            <svg className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21V9m0 12l-4-4m4 4l4-4M5 5h14" />
+            </svg>
+          </button>
+          </div>
+          <div className="absolute top-full right-0 mt-2 flex gap-2 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 pointer-events-auto">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete(sticker.id);
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            className="p-2.5 sm:p-2 bg-red-500/80 hover:bg-red-500 rounded-md shadow-lg touch-manipulation"
+            className="min-w-[30px] min-h-[30px] p-1.5 sm:p-1 bg-red-500/80 hover:bg-red-500 rounded-md shadow-lg touch-manipulation"
             aria-label="Delete sticker"
           >
-            <TrashIcon className="w-4 h-4 sm:w-3 sm:h-3 text-white" />
+            <TrashIcon className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-white" />
           </button>
+          </div>
         </div>
       )}
 

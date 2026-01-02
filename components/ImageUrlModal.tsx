@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CONSTANTS } from '../utils/constants';
 
 interface ImageUrlModalProps {
   onSubmit: (url: string) => void;
@@ -57,7 +58,7 @@ const ImageUrlModal: React.FC<ImageUrlModalProps> = ({ onSubmit, onClose }) => {
   return (
     <div
       className="fixed inset-0 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      style={{ zIndex: 60 }}
+      style={{ zIndex: CONSTANTS.Z_INDEX.MODAL }}
       onClick={onClose}
     >
       <div

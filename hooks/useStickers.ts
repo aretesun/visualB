@@ -18,6 +18,8 @@ export const useStickers = () => {
   const deleteInstanceFromStore = useStickerStore(state => state.deleteInstance);
   const setInstances = useStickerStore(state => state.setInstances);
   const bringInstanceToFront = useStickerStore(state => state.bringInstanceToFront);
+  const bringInstanceForward = useStickerStore(state => state.bringInstanceForward);
+  const sendInstanceBackward = useStickerStore(state => state.sendInstanceBackward);
 
   /**
    * 새 스티커 추가 (팔레트에)
@@ -84,6 +86,14 @@ export const useStickers = () => {
     bringInstanceToFront(id);
   }, [bringInstanceToFront]);
 
+  const bringForward = useCallback((id: string) => {
+    bringInstanceForward(id);
+  }, [bringInstanceForward]);
+
+  const sendBackward = useCallback((id: string) => {
+    sendInstanceBackward(id);
+  }, [sendInstanceBackward]);
+
   /**
    * 여러 인스턴스를 함께 이동
    */
@@ -139,6 +149,8 @@ export const useStickers = () => {
     resizeInstance,
     deleteInstance,
     bringToFront,
+    bringForward,
+    sendBackward,
     moveMultiple,
     cloneInstance,
     getPremadeStickers,
