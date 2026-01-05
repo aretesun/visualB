@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState, useMemo } from 'react';
-import { Card, Position, Sticker, StickerInstance, Size } from './types';
+import { Card, Position, Sticker, StickerInstance, Size, TemplateId } from './types';
 import CardComponent from './components/Card';
 import Toolbar from './components/Toolbar';
 import AddCardButton from './components/AddCardButton';
@@ -17,6 +17,7 @@ import { useCanvasStore, useStickerStore, useSelectionStore, useUIStore } from '
 import { useBackgroundStore, DEFAULT_BACKGROUND_SETTINGS } from './store/useBackgroundStore';
 import { useBoardStore } from './store/useBoardStore';
 import { CONSTANTS } from './utils/constants';
+import { DEFAULT_TEMPLATE_ID, getTemplateDefaultText } from './utils/cardTemplates';
 import { PositionUtils } from './utils/positionUtils';
 import santaImage from './sticker/santa.png';
 import treeImage from './sticker/tree.png';
@@ -36,6 +37,8 @@ const App: React.FC = () => {
   const bringCardForward = useCanvasStore(state => state.bringCardForward);
   const sendCardBackward = useCanvasStore(state => state.sendCardBackward);
   const setViewport = useCanvasStore(state => state.setViewport);
+  const lastTemplateId = useCanvasStore(state => state.lastTemplateId);
+  const setLastTemplateId = useCanvasStore(state => state.setLastTemplateId);
 
   const stickers = useStickerStore(state => state.palette);
   const stickerInstances = useStickerStore(state => state.instances);
@@ -585,13 +588,19 @@ const App: React.FC = () => {
   }, [addBoard, setActiveBoard, setIsBoardManagerOpen, createDefaultStickers]);
 
   // 카드 추가 핸들러
-  const handleAddCard = useCallback(() => {
+  const handleAddCard = useCallback((templateId?: TemplateId) => {
     if (!useCanvasStore.getState().canAddCard()) {
       showToast(t.toast.maxCards);
       return;
     }
-    addCard();
-  }, [addCard, showToast, t]);
+    const nextTemplateId = templateId || lastTemplateId || DEFAULT_TEMPLATE_ID;
+    const templateText = getTemplateDefaultText(t, nextTemplateId);
+    addCard({
+      templateId: nextTemplateId,
+      text: templateText,
+    });
+    setLastTemplateId(nextTemplateId);
+  }, [addCard, showToast, t, lastTemplateId, setLastTemplateId]);
 
   // 카드 및 스티커 위치 업데이트 (통합 핸들러)
   const handleObjectPositionChange = useCallback((
@@ -1211,7 +1220,10 @@ const App: React.FC = () => {
       />
       {!isSharedView && (
         <>
-          <AddCardButton onAddCard={handleAddCard} />
+          <AddCardButton
+            onAddCard={handleAddCard}
+            lastTemplateId={lastTemplateId}
+          />
           <SettingsMenu
             items={displayCards}
             onRestore={handleRestore}

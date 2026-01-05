@@ -3,6 +3,8 @@ export interface Position {
   y: number;
 }
 
+export type TemplateId = 'note' | 'checklist' | 'goal' | 'retro' | 'project';
+
 export interface Size {
   width: number;
   height: number;
@@ -23,6 +25,7 @@ export interface Card extends CanvasObjectBase {
   imageOffset?: Position; // 이미지 오프셋 (마스크 기능용)
   isNew?: boolean;    // 새로 생성된 카드 (자동 삭제 방지용)
   color?: string;     // 카드 배경 색상 (테마)
+  templateId?: TemplateId;
 }
 
 // 레거시 타입 호환성을 위한 별칭

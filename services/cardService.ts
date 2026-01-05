@@ -135,6 +135,7 @@ export class CardService {
       imageOffset: card.imageOffset,
       zIndex: card.zIndex,
       color: card.color,
+      templateId: card.templateId,
     };
   }
 

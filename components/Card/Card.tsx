@@ -479,6 +479,7 @@ const Card: React.FC<CardProps> = ({
         isEditing={isEditing}
         hasImage={!!item.imageUrl}
         tone={backgroundTone}
+        templateId={item.templateId}
         onTextChange={(text) => onTextChange(item.id, text)}
         onEditStart={() => {
           hasEditedRef.current = true; // 편집 시작 표시
@@ -498,6 +499,7 @@ const Card: React.FC<CardProps> = ({
         isEditing={isEditing}
         isImageLocked={isImageLocked}
         isEmpty={isEmpty}
+        allowAddImage={item.templateId !== 'goal' && item.templateId !== 'retro' && item.templateId !== 'project'}
         onImageOffsetChange={(offset) => onImageOffsetChange(item.id, offset)}
         onBringToFront={() => onBringToFront(item.id)}
         onAddImageClick={handleImageAddClick}

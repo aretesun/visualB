@@ -115,6 +115,58 @@ export const ko = {
     updatedAt: "업데이트",
   },
 
+  // 카드 템플릿
+  templates: {
+    title: "템플릿 선택",
+    recent: "최근",
+    items: {
+      note: {
+        label: "메모",
+        description: "빈 텍스트 카드",
+        defaultText: "",
+      },
+      checklist: {
+        label: "체크리스트",
+        description: "할 일 목록",
+        defaultText: "- [ ] 할 일 1\n- [ ] 할 일 2\n- [ ] 할 일 3",
+      },
+      goal: {
+        label: "목표",
+        description: "목표와 실행 계획",
+        defaultText: "[[goal]]\n\n[[reason]]\n\n[[firstStep]]\n",
+      },
+      retro: {
+        label: "회고",
+        description: "Keep / Problem / Try",
+        defaultText: "[[keep]]\n\n[[problem]]\n\n[[try]]\n",
+      },
+      project: {
+        label: "프로젝트",
+        description: "일정과 진행 상태 관리",
+        defaultText: "[[projectName]]\n\n[[deadlineDate]]\n\n[[planning]]\n\n[[design]]\n\n[[development]]\n",
+      },
+    },
+    sections: {
+      goal: {
+        goal: "목표",
+        reason: "이유",
+        firstStep: "첫 행동",
+      },
+      retro: {
+        keep: "Keep",
+        problem: "Problem",
+        try: "Try",
+      },
+      project: {
+        name: "프로젝트 이름",
+        deadlineDate: "마감일 (날짜)",
+        planning: "기획",
+        design: "디자인",
+        development: "개발",
+      },
+    },
+  },
+
   // 스티커 팔레트
   stickerPalette: {
     title: "스티커",

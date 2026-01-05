@@ -117,6 +117,58 @@ export const en: Translations = {
     updatedAt: "Updated",
   },
 
+  // Card Templates
+  templates: {
+    title: "Choose a template",
+    recent: "Recent",
+    items: {
+      note: {
+        label: "Note",
+        description: "Empty text card",
+        defaultText: "",
+      },
+      checklist: {
+        label: "Checklist",
+        description: "Simple to-do list",
+        defaultText: "- [ ] Task 1\n- [ ] Task 2\n- [ ] Task 3",
+      },
+      goal: {
+        label: "Goal",
+        description: "Goal and next steps",
+        defaultText: "[[goal]]\n\n[[reason]]\n\n[[firstStep]]\n",
+      },
+      retro: {
+        label: "Retro",
+        description: "Keep / Problem / Try",
+        defaultText: "[[keep]]\n\n[[problem]]\n\n[[try]]\n",
+      },
+      project: {
+        label: "Project",
+        description: "Plan and track progress",
+        defaultText: "[[projectName]]\n\n[[deadlineDate]]\n\n[[planning]]\n\n[[design]]\n\n[[development]]\n",
+      },
+    },
+    sections: {
+      goal: {
+        goal: "Goal",
+        reason: "Why",
+        firstStep: "First step",
+      },
+      retro: {
+        keep: "Keep",
+        problem: "Problem",
+        try: "Try",
+      },
+      project: {
+        name: "Project name",
+        deadlineDate: "Deadline (date)",
+        planning: "Planning",
+        design: "Design",
+        development: "Development",
+      },
+    },
+  },
+
   // Sticker Palette
   stickerPalette: {
     title: "Stickers",

@@ -10,6 +10,7 @@ interface CardImageProps {
   isEditing: boolean;
   isImageLocked: boolean;
   isEmpty: boolean;
+  allowAddImage?: boolean;
   onImageOffsetChange: (offset: Position) => void;
   onBringToFront: () => void;
   onAddImageClick: () => void;
@@ -30,6 +31,7 @@ const CardImage: React.FC<CardImageProps> = ({
   isEditing,
   isImageLocked,
   isEmpty,
+  allowAddImage = true,
   onImageOffsetChange,
   onBringToFront,
   onAddImageClick,
@@ -284,6 +286,9 @@ const CardImage: React.FC<CardImageProps> = ({
 
   // 이미지가 없을 때는 편집 모드 또는 빈 카드에서만 추가 버튼 표시
   if (!imageUrl) {
+    if (!allowAddImage) {
+      return null;
+    }
     if (!isEditing && !isEmpty) {
       return null;
     }

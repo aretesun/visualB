@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
-import { Card, Position, Size, Sticker, StickerInstance } from '../types';
+import { Card, Position, Size, Sticker, StickerInstance, TemplateId } from '../types';
 import { CONSTANTS } from '../utils/constants';
+import { DEFAULT_TEMPLATE_ID } from '../utils/cardTemplates';
 import { STORAGE_KEYS } from '../utils/storageKeys';
 import { indexedDBStorage } from './indexedDBStorage';
 
@@ -41,6 +42,7 @@ interface CanvasState {
   viewport: Size;
   backgroundImage: string;
   nextId: number;
+  lastTemplateId: TemplateId;
 
   // 액션
   addCard: (card?: Partial<Card>) => void;
@@ -53,6 +55,7 @@ interface CanvasState {
   setViewport: (size: Size) => void;
   setBackground: (url: string) => void;
   refreshBackground: () => void;
+  setLastTemplateId: (templateId: TemplateId) => void;
 
   // 유틸리티
   getNextId: () => number;
@@ -69,6 +72,7 @@ export const useCanvasStore = create<CanvasState>()(
         viewport: { width: window.innerWidth, height: window.innerHeight },
         backgroundImage: '',
         nextId: 1,
+        lastTemplateId: DEFAULT_TEMPLATE_ID,
 
         addCard: (card) => {
           const state = get();
@@ -96,6 +100,7 @@ export const useCanvasStore = create<CanvasState>()(
             imageOffset: card?.imageOffset,
             isNew: card?.isNew !== undefined ? card.isNew : true, // 기본값: 새 카드
             color: card?.color ?? 'default',
+            templateId: card?.templateId ?? DEFAULT_TEMPLATE_ID,
           };
 
           set({
@@ -195,6 +200,10 @@ export const useCanvasStore = create<CanvasState>()(
           set({ backgroundImage: CONSTANTS.BACKGROUND_IMAGES[randomIndex] });
         },
 
+        setLastTemplateId: (templateId) => {
+          set({ lastTemplateId: templateId });
+        },
+
         getNextId: () => get().nextId,
 
         canAddCard: () => get().cards.length < CONSTANTS.MAX_CARDS,
@@ -206,6 +215,7 @@ export const useCanvasStore = create<CanvasState>()(
           cards: state.cards,
           backgroundImage: state.backgroundImage,
           nextId: state.nextId,
+          lastTemplateId: state.lastTemplateId,
         }),
         onRehydrateStorage: () => (state) => {
           if (state?.cards) {

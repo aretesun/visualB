@@ -3,7 +3,7 @@ import { useCanvasStore } from '../store/useStore';
 import { CardService } from '../services/cardService';
 import { PositionUtils } from '../utils/positionUtils';
 import { CONSTANTS } from '../utils/constants';
-import { Card, Position } from '../types';
+import { Card, Position, TemplateId } from '../types';
 
 /**
  * 카드 관련 비즈니스 로직을 담은 커스텀 훅
@@ -23,17 +23,21 @@ export const useCards = () => {
   /**
    * 새 카드 추가
    */
-  const addCard = useCallback((position?: Position) => {
+  const addCard = useCallback((options?: { position?: Position; templateId?: TemplateId; text?: string }) => {
     if (!CardService.canAdd(cards.length)) {
       return { success: false, error: 'MAX_CARDS_REACHED' };
     }
 
-    const centerPosition = position || PositionUtils.centerInViewport(
+    const centerPosition = options?.position || PositionUtils.centerInViewport(
       viewport,
       { width: CONSTANTS.DEFAULT_CARD_WIDTH, height: CONSTANTS.DEFAULT_CARD_HEIGHT }
     );
 
-    addCardToStore({ position: centerPosition });
+    addCardToStore({
+      position: centerPosition,
+      templateId: options?.templateId,
+      text: options?.text,
+    });
     return { success: true };
   }, [cards.length, viewport, addCardToStore]);
 
