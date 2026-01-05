@@ -23,7 +23,7 @@ const ImageSourceDropdown: React.FC<ImageSourceDropdownProps> = ({
   useEffect(() => {
     // 약간의 딜레이를 두고 이벤트 리스너 등록 (드롭다운 열리는 클릭과 충돌 방지)
     const timer = setTimeout(() => {
-      const handleClickOutside = (event: MouseEvent) => {
+      const handlePointerOutside = (event: PointerEvent | TouchEvent) => {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
           onClose();
         }
@@ -35,12 +35,14 @@ const ImageSourceDropdown: React.FC<ImageSourceDropdownProps> = ({
         }
       };
 
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('pointerdown', handlePointerOutside);
+      document.addEventListener('touchstart', handlePointerOutside);
       document.addEventListener('keydown', handleEscape);
 
       // cleanup 함수를 위해 저장
       (dropdownRef.current as any)._cleanup = () => {
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('pointerdown', handlePointerOutside);
+        document.removeEventListener('touchstart', handlePointerOutside);
         document.removeEventListener('keydown', handleEscape);
       };
     }, 100);
@@ -62,9 +64,18 @@ const ImageSourceDropdown: React.FC<ImageSourceDropdownProps> = ({
         left: `${position.x}px`,
         minWidth: '200px',
       }}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
+      onTouchStart={(e) => {
+        e.stopPropagation();
+      }}
     >
       <button
-        onMouseDown={(e) => {
+        onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onUploadFile();
@@ -80,7 +91,7 @@ const ImageSourceDropdown: React.FC<ImageSourceDropdownProps> = ({
       </button>
       <div className="border-t border-white/10" />
       <button
-        onMouseDown={(e) => {
+        onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onGenerateImage();
@@ -96,7 +107,7 @@ const ImageSourceDropdown: React.FC<ImageSourceDropdownProps> = ({
       </button>
       <div className="border-t border-white/10" />
       <button
-        onMouseDown={(e) => {
+        onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onAddByUrl();

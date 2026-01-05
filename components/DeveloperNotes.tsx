@@ -39,6 +39,32 @@ const DeveloperNotes: React.FC<DeveloperNotesProps> = ({ onClose }) => {
           {/* 최신 업데이트 */}
           <div className="bg-white/5 rounded-lg p-4 border border-white/10">
             <div className="flex items-center space-x-2 mb-3">
+              <span className="text-lg font-semibold">✨ v1.6.0</span>
+              <span className="text-sm text-white/60">2026-01-05</span>
+            </div>
+            <ul className="space-y-2 text-sm text-white/80 ml-4">
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>카드 템플릿 추가 (메모/체크리스트/목표/회고/프로젝트)</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>프로젝트 템플릿: 이름/마감일/기획·디자인·개발 체크 항목 지원</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>체크리스트는 실제 체크박스 UI로 관리</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="text-yellow-400 mt-1">•</span>
+                <span>+ 버튼: 짧게 클릭 시 최근 템플릿 즉시 생성, 롱프레스로 템플릿 선택</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* 이전 업데이트 */}
+          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+            <div className="flex items-center space-x-2 mb-3">
               <span className="text-lg font-semibold">✨ v1.5.0</span>
               <span className="text-sm text-white/60">2025-11-13</span>
             </div>

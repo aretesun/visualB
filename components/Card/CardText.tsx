@@ -58,10 +58,6 @@ const CardText: React.FC<CardTextProps> = ({
   }, [text]);
 
 
-  if (!isEditing && !text && hasImage) {
-    return null;
-  }
-
   const textClass = tone === 'light' ? 'text-slate-900' : 'text-white';
   const placeholderClass = tone === 'light' ? 'placeholder-slate-500' : 'placeholder-white/40';
   const hintClass = tone === 'light' ? 'text-slate-500 hover:text-slate-700' : 'text-white/30 hover:text-white/50';
@@ -561,6 +557,10 @@ const CardText: React.FC<CardTextProps> = ({
       </div>
     );
   };
+
+  if (!isEditing && !text && hasImage) {
+    return null;
+  }
 
   return (
     <div className="flex-1 mb-3">
