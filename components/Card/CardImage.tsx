@@ -282,9 +282,9 @@ const CardImage: React.FC<CardImageProps> = ({
     );
   }
 
-  // 이미지가 없을 때는 편집 모드에서만 추가 버튼 표시
+  // 이미지가 없을 때는 편집 모드 또는 빈 카드에서만 추가 버튼 표시
   if (!imageUrl) {
-    if (!isEditing) {
+    if (!isEditing && !isEmpty) {
       return null;
     }
     return (

@@ -104,13 +104,13 @@ const Card: React.FC<CardProps> = ({
     ? boostBackgroundAlpha(cardColor.background, 0.28)
     : cardColor.background;
 
-  // 새 카드 생성 시 데스크톱에서는 자동으로 텍스트 편집 모드 진입
+  // 새 카드 생성 시 자동으로 텍스트 편집 모드 진입 (모바일은 제외)
   useEffect(() => {
-    if (item.isNew && !isMobile && isEmpty) {
+    if (item.isNew && isEmpty && !isMobile) {
       setIsEditing(true);
       hasEditedRef.current = true; // 편집 모드 진입 표시
     }
-  }, [item.isNew, isMobile, isEmpty]);
+  }, [item.isNew, isEmpty, isMobile]);
 
   // 텍스트나 이미지가 추가되면 isNew 플래그 해제
   useEffect(() => {
@@ -454,7 +454,7 @@ const Card: React.FC<CardProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group backdrop-blur-xl border p-3 overflow-visible ${isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
+      className={`absolute rounded-lg shadow-2xl transition-[transform,box-shadow] duration-200 ease-in-out cursor-grab flex flex-col group backdrop-blur-xl border p-3 overflow-visible focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${isDragging ? 'shadow-black/50 scale-105' : 'shadow-black/30'
         } ${isDragOver ? 'border-sky-400 border-2 bg-sky-500/20' : ''} ${isResizing ? 'cursor-nwse-resize' : ''
         } ${isSelected ? 'border-blue-400 border-2 ring-2 ring-blue-400/50' : ''}`}
       style={{

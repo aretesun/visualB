@@ -33,15 +33,15 @@ const CardText: React.FC<CardTextProps> = ({
   // 모바일 감지 (터치 디바이스)
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  // 편집 모드 진입 시 포커스
+  // 편집 모드 진입 시 포커스 (모바일은 자동 포커스 방지)
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
+    if (isEditing && textareaRef.current && !isMobile) {
       setTimeout(() => {
         textareaRef.current?.focus();
         textareaRef.current?.select();
       }, 100);
     }
-  }, [isEditing]);
+  }, [isEditing, isMobile]);
 
   // text prop이 변경되면 editText도 업데이트
   useEffect(() => {
@@ -73,7 +73,7 @@ const CardText: React.FC<CardTextProps> = ({
     }
   };
 
-  if (!isEditing && !text) {
+  if (!isEditing && !text && hasImage) {
     return null;
   }
 
